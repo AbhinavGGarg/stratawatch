@@ -4,6 +4,8 @@ export type SignalType =
   | "news_sentiment_spike"
   | "infrastructure_disruption";
 
+export type SignalSource = "simulated" | "usgs" | "eonet" | "open_meteo";
+
 export type RiskBand = "low" | "medium" | "high" | "critical";
 
 export type NodeStatus = "healthy" | "stressed" | "failed";
@@ -11,10 +13,12 @@ export type NodeStatus = "healthy" | "stressed" | "failed";
 export interface Signal {
   id: string;
   type: SignalType;
+  source: SignalSource;
   severity: number;
   timestamp: string;
   location: [number, number];
   regionId: string;
+  details?: string;
 }
 
 export interface RegionSeed {

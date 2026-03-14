@@ -138,7 +138,8 @@ export function BriefingPanel({
                       ))}
                       {signals.slice(0, 3).map((signal) => (
                         <p key={signal.id} className="text-xs text-zinc-400">
-                          • {formatSignalType(signal.type)} ({Math.round(signal.severity * 100)}%), {formatTimeAgo(signal.timestamp)}
+                          • {signal.source === "simulated" ? "Simulated" : "Live"} · {formatSignalType(signal.type)} (
+                          {Math.round(signal.severity * 100)}%), {formatTimeAgo(signal.timestamp)}
                         </p>
                       ))}
                     </>

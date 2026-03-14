@@ -12,7 +12,7 @@ import {
 } from "@/lib/risk-engine";
 import type { ActivityEvent, CascadeResult, RegionState, Signal } from "@/lib/types";
 
-const ACTIVE_SIGNAL_WINDOW_MS = 1000 * 60 * 35;
+const ACTIVE_SIGNAL_WINDOW_MS = 1000 * 60 * 60 * 6;
 
 const asTimestamp = (isoString: string): number => new Date(isoString).getTime();
 
@@ -32,7 +32,19 @@ const makeActivity = (
 
 const sanitizeSignals = (signals: Signal[]): Signal[] => {
   const threshold = Date.now() - ACTIVE_SIGNAL_WINDOW_MS;
-  return signals.filter((signal) => asTimestamp(signal.timestamp) >= threshold);
+  const deduped = new Map<string, Signal>();
+
+  for (const signal of signals) {
+    if (asTimestamp(signal.timestamp) < threshold) {
+      continue;
+    }
+
+    deduped.set(signal.id, signal);
+  }
+
+  return [...deduped.values()].sort(
+    (left, right) => asTimestamp(right.timestamp) - asTimestamp(left.timestamp),
+  );
 };
 
 export const useStratawatch = () => {
@@ -132,7 +144,11 @@ export const useStratawatch = () => {
   );
 
   const selectedRegionSignals = useMemo(
-    () => signals.filter((signal) => signal.regionId === selectedRegionId).slice(-8).reverse(),
+    () =>
+      signals
+        .filter((signal) => signal.regionId === selectedRegionId)
+        .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime())
+        .slice(0, 8),
     [signals, selectedRegionId],
   );
 

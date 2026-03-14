@@ -22,7 +22,13 @@ It is optimized for a polished, demo-first experience:
 ## Features
 
 ### 1. Signal Detection Layer
-`/api/signal-burst` generates mock anomalies every few seconds:
+`/api/signal-burst` serves a hybrid stream every few seconds:
+- Live signals from USGS (significant earthquakes)
+- Live signals from NASA EONET (open natural hazard events)
+- Live weather pressure proxies from Open-Meteo for key maritime corridors
+- Simulated anomalies as fallback/fill for continuous demo behavior
+
+Signal categories shown in the UI:
 - Shipping congestion
 - Extreme weather
 - News sentiment spikes

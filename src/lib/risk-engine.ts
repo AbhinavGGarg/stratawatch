@@ -49,9 +49,20 @@ const topDrivers = (signals: Signal[]): SignalType[] => {
 };
 
 const recentSignalDensity = (signals: Signal[], now: Date): number => {
-  const horizonMs = 1000 * 60 * 30;
-  const recentSignals = signals.filter((signal) => now.getTime() - new Date(signal.timestamp).getTime() <= horizonMs);
-  return clamp(recentSignals.length / 7);
+  const horizonMs = 1000 * 60 * 60 * 6;
+  const decayWindowMs = 1000 * 60 * 90;
+
+  const weightedCount = signals.reduce((sum, signal) => {
+    const ageMs = now.getTime() - new Date(signal.timestamp).getTime();
+    if (ageMs < 0 || ageMs > horizonMs) {
+      return sum;
+    }
+
+    const decay = Math.exp(-ageMs / decayWindowMs);
+    return sum + decay;
+  }, 0);
+
+  return clamp(weightedCount / 5.5);
 };
 
 export const createInitialRegionState = (): RegionState[] => {

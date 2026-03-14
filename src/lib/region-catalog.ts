@@ -38,7 +38,7 @@ const H3_RESOLUTION = 3;
 
 const toRadians = (value: number): number => (value * Math.PI) / 180;
 
-const haversineDistance = (a: [number, number], b: [number, number]): number => {
+export const haversineDistanceKm = (a: [number, number], b: [number, number]): number => {
   const [lngA, latA] = a;
   const [lngB, latB] = b;
   const earthRadiusKm = 6371;
@@ -64,7 +64,7 @@ export const REGION_CATALOG: RegionSeed[] = withHex.map((region) => {
     .filter((candidate) => candidate.id !== region.id)
     .map((candidate) => ({
       id: candidate.id,
-      distance: haversineDistance(region.center, candidate.center),
+      distance: haversineDistanceKm(region.center, candidate.center),
     }))
     .sort((left, right) => left.distance - right.distance)
     .slice(0, 4)
@@ -80,3 +80,18 @@ export const REGION_CATALOG: RegionSeed[] = withHex.map((region) => {
 });
 
 export const REGION_LOOKUP = new Map(REGION_CATALOG.map((region) => [region.id, region]));
+
+export const findNearestRegion = (location: [number, number]): RegionSeed => {
+  let nearest = REGION_CATALOG[0];
+  let nearestDistance = Number.POSITIVE_INFINITY;
+
+  for (const region of REGION_CATALOG) {
+    const distance = haversineDistanceKm(location, region.center);
+    if (distance < nearestDistance) {
+      nearest = region;
+      nearestDistance = distance;
+    }
+  }
+
+  return nearest;
+};

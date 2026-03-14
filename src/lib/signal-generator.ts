@@ -67,6 +67,7 @@ export const generateSignalBurst = (
     return {
       id: `${now.getTime()}-${index}-${Math.random().toString(16).slice(2, 8)}`,
       type,
+      source: "simulated",
       severity,
       location: [lng, lat],
       timestamp: now.toISOString(),
@@ -101,7 +102,16 @@ const signalEventTemplates: Record<SignalType, string[]> = {
 export const signalToActivityText = (signal: Signal, regionName: string): string => {
   const options = signalEventTemplates[signal.type];
   const prefix = options[Math.floor(Math.random() * options.length)] ?? "Anomaly detected";
-  return `${prefix} in ${regionName}`;
+  const sourcePrefix =
+    signal.source === "simulated"
+      ? ""
+      : signal.source === "open_meteo"
+        ? "LIVE Weather: "
+        : signal.source === "usgs"
+          ? "LIVE Seismic: "
+          : "LIVE Event: ";
+  const detailSuffix = signal.details ? ` (${signal.details})` : "";
+  return `${sourcePrefix}${prefix} in ${regionName}${detailSuffix}`;
 };
 
 export const formatSignalType = (type: SignalType): string =>
