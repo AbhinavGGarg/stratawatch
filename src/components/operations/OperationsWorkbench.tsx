@@ -92,7 +92,7 @@ export function OperationsWorkbench() {
         </div>
       </div>
 
-      <div className="relative z-10 grid min-h-[calc(100vh-8rem)] grid-cols-1 gap-3 2xl:grid-cols-[300px_minmax(0,1fr)_420px]">
+      <div className="relative z-10 grid min-h-[calc(100vh-8rem)] grid-cols-1 gap-3 xl:grid-cols-[300px_minmax(0,1fr)_420px]">
         <motion.div initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.32 }}>
           <Sidebar stats={stats} activityFeed={blendedActivity} lastUpdated={lastUpdated} />
         </motion.div>
