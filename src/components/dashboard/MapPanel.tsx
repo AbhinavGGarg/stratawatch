@@ -60,6 +60,8 @@ interface MapLibrary {
     projection: "mercator";
     attributionControl: boolean;
     dragRotate: boolean;
+    renderWorldCopies?: boolean;
+    maxBounds?: [[number, number], [number, number]];
   }) => MapLike;
   NavigationControl: new (options: { showCompass: boolean }) => unknown;
   accessToken?: string;
@@ -192,6 +194,11 @@ export function MapPanel({ regions, selectedRegionId, onSelectRegion, isLoading 
         projection: "mercator",
         attributionControl: false,
         dragRotate: false,
+        renderWorldCopies: false,
+        maxBounds: [
+          [-179.9, -84.5],
+          [179.9, 84.5],
+        ],
       });
 
       map.addControl(new runtime.library.NavigationControl({ showCompass: false }), "bottom-right");
