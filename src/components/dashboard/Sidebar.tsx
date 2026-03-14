@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, BarChart3, Globe2, Radar, Waypoints } from "lucide-react";
+import { Activity, BarChart3, Globe2, Radar, TowerControl, Waypoints } from "lucide-react";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import type { ActivityEvent } from "@/lib/types";
 
@@ -21,6 +21,7 @@ const navigationItems = [
   { icon: Radar, label: "Signals", href: "/signals" },
   { icon: BarChart3, label: "Risk Map", href: "/risk-map" },
   { icon: Waypoints, label: "Cascade Simulator", href: "/cascade-simulator" },
+  { icon: TowerControl, label: "Operations", href: "/operations" },
 ];
 
 const statusCards = [
