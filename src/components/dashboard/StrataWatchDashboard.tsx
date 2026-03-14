@@ -33,23 +33,7 @@ export function StrataWatchDashboard({ view }: StrataWatchDashboardProps) {
   } = useStratawatch();
 
   const renderCenterPanel = () => {
-    if (view === "signals") {
-      return <SignalsPanel signals={signals} regions={regions} formatSignalType={formatSignalType} />;
-    }
-
-    if (view === "cascade-simulator") {
-      return (
-        <CascadeFocusPanel
-          selectedRegion={selectedRegion}
-          cascadeResult={cascadeResult}
-          onSimulate={triggerDisruption}
-          nodes={networkTemplate.nodes}
-          links={networkTemplate.links}
-        />
-      );
-    }
-
-    return (
+    const mapPanel = (
       <MapPanel
         regions={regions}
         selectedRegionId={selectedRegionId}
@@ -57,6 +41,32 @@ export function StrataWatchDashboard({ view }: StrataWatchDashboardProps) {
         isLoading={isLoading}
       />
     );
+
+    if (view === "signals") {
+      return (
+        <div className="grid h-full min-h-[72vh] grid-rows-[360px_minmax(0,1fr)] gap-3 xl:min-h-0 xl:grid-rows-[minmax(320px,42%)_minmax(0,1fr)]">
+          {mapPanel}
+          <SignalsPanel signals={signals} regions={regions} formatSignalType={formatSignalType} />
+        </div>
+      );
+    }
+
+    if (view === "cascade-simulator") {
+      return (
+        <div className="grid h-full min-h-[72vh] grid-rows-[360px_minmax(0,1fr)] gap-3 xl:min-h-0 xl:grid-rows-[minmax(320px,42%)_minmax(0,1fr)]">
+          {mapPanel}
+          <CascadeFocusPanel
+            selectedRegion={selectedRegion}
+            cascadeResult={cascadeResult}
+            onSimulate={triggerDisruption}
+            nodes={networkTemplate.nodes}
+            links={networkTemplate.links}
+          />
+        </div>
+      );
+    }
+
+    return mapPanel;
   };
 
   return (
