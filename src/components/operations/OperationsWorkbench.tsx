@@ -8,11 +8,16 @@ import { MapPanel } from "@/components/dashboard/MapPanel";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { LocalImpactSimulationPanel } from "@/components/simulation/LocalImpactSimulationPanel";
 import { useOpsStream } from "@/hooks/use-ops-stream";
+import type { DataMode } from "@/hooks/use-stratawatch";
 import { DEMO_MODE_SCRIPT } from "@/mock-data/demo-mode";
 import { useStratawatch } from "@/hooks/use-stratawatch";
 import { useCommandStore } from "@/store/command-store";
 
-export function OperationsWorkbench() {
+interface OperationsWorkbenchProps {
+  dataMode?: DataMode;
+}
+
+export function OperationsWorkbench({ dataMode = "live" }: OperationsWorkbenchProps) {
   const {
     regions,
     selectedRegion,
@@ -27,7 +32,7 @@ export function OperationsWorkbench() {
     lastUpdated,
     networkTemplate,
     formatSignalType,
-  } = useStratawatch();
+  } = useStratawatch(dataMode);
 
   const panel = useCommandStore((state) => state.panel);
   const setRegion = useCommandStore((state) => state.setRegion);
@@ -61,7 +66,7 @@ export function OperationsWorkbench() {
     }
   }, [filteredSites, selectedRegionId, selectedSite, setScale, setSite]);
 
-  useOpsStream(panel.demoModeEnabled);
+  useOpsStream(dataMode === "simulated" && panel.demoModeEnabled);
 
   const clearDemoTimers = () => {
     for (const timer of demoTimersRef.current) {
@@ -152,15 +157,26 @@ export function OperationsWorkbench() {
           <p className="text-xs text-zinc-400">Global risk intelligence fused with site and building-level emergency simulation</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={runDemoMode}
-            disabled={demoRunning}
-            className="inline-flex items-center gap-1 rounded-lg border border-cyan-400/40 bg-cyan-500/15 px-3 py-1.5 text-xs text-cyan-100"
+          {dataMode === "simulated" && (
+            <button
+              type="button"
+              onClick={runDemoMode}
+              disabled={demoRunning}
+              className="inline-flex items-center gap-1 rounded-lg border border-cyan-400/40 bg-cyan-500/15 px-3 py-1.5 text-xs text-cyan-100"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              {demoRunning ? "Demo Running..." : "Run Demo Mode"}
+            </button>
+          )}
+          <span
+            className={`rounded-lg border px-2 py-1 text-[11px] ${
+              dataMode === "live"
+                ? "border-emerald-400/35 bg-emerald-500/15 text-emerald-100"
+                : "border-cyan-400/35 bg-cyan-500/15 text-cyan-100"
+            }`}
           >
-            <Sparkles className="h-3.5 w-3.5" />
-            {demoRunning ? "Demo Running..." : "Run Demo Mode"}
-          </button>
+            Data: {dataMode === "live" ? "LIVE" : "SIMULATED"}
+          </span>
           <span className="rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-[11px] text-zinc-300">
             Scale: {panel.activeScale.toUpperCase()}
           </span>

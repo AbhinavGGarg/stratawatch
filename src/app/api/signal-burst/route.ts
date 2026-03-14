@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 const LIVE_CACHE_TTL_MS = 1000 * 60 * 10;
 let liveSignalCache: Signal[] = [];
 let liveSignalFetchedAt = 0;
+type SignalMode = "live" | "simulated" | "hybrid";
 
 const getCachedLiveSignals = async (): Promise<Signal[]> => {
   const now = Date.now();
@@ -28,6 +29,9 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const countParam = Number(searchParams.get("count") ?? "6");
   const count = Number.isFinite(countParam) ? Math.max(2, Math.min(10, countParam)) : 6;
+  const modeParam = searchParams.get("mode");
+  const mode: SignalMode =
+    modeParam === "simulated" || modeParam === "hybrid" || modeParam === "live" ? modeParam : "live";
 
   const simulatedSignals = generateSignalBurst(
     REGION_CATALOG.map((region) => region.id),
@@ -35,16 +39,23 @@ export async function GET(request: Request) {
     new Date(),
   );
   const liveSignals = await getCachedLiveSignals();
-  const sampledLiveSignals = liveSignals.slice(0, 8);
-  const signals = [...sampledLiveSignals, ...simulatedSignals];
+  const sampledLiveSignals = liveSignals.slice(0, Math.max(4, count + 2));
+
+  const signals =
+    mode === "live"
+      ? sampledLiveSignals
+      : mode === "simulated"
+        ? simulatedSignals
+        : [...sampledLiveSignals, ...simulatedSignals];
 
   return NextResponse.json(
     {
       generatedAt: new Date().toISOString(),
       signals,
+      mode,
       sourceMix: {
-        live: sampledLiveSignals.length,
-        simulated: simulatedSignals.length,
+        live: mode === "simulated" ? 0 : sampledLiveSignals.length,
+        simulated: mode === "live" ? 0 : simulatedSignals.length,
       },
     },
     {

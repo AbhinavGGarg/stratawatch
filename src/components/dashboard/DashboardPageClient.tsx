@@ -1,13 +1,15 @@
 "use client";
 
 import { StrataWatchDashboard, type DashboardView } from "@/components/dashboard/StrataWatchDashboard";
+import type { DataMode } from "@/hooks/use-stratawatch";
 import { useIsClient } from "@/hooks/use-is-client";
 
 interface DashboardPageClientProps {
   view: DashboardView;
+  dataMode?: DataMode;
 }
 
-export function DashboardPageClient({ view }: DashboardPageClientProps) {
+export function DashboardPageClient({ view, dataMode = "live" }: DashboardPageClientProps) {
   const isClient = useIsClient();
 
   if (!isClient) {
@@ -22,5 +24,5 @@ export function DashboardPageClient({ view }: DashboardPageClientProps) {
     );
   }
 
-  return <StrataWatchDashboard view={view} />;
+  return <StrataWatchDashboard view={view} dataMode={dataMode} />;
 }

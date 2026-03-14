@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function CommandCenterPage() {
-  return <OperationsPageClient />;
+  return <OperationsPageClient dataMode="live" />;
 }

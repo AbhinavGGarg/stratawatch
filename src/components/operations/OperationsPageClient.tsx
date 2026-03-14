@@ -1,9 +1,14 @@
 "use client";
 
 import { OperationsWorkbench } from "@/components/operations/OperationsWorkbench";
+import type { DataMode } from "@/hooks/use-stratawatch";
 import { useIsClient } from "@/hooks/use-is-client";
 
-export function OperationsPageClient() {
+interface OperationsPageClientProps {
+  dataMode?: DataMode;
+}
+
+export function OperationsPageClient({ dataMode = "live" }: OperationsPageClientProps) {
   const isClient = useIsClient();
 
   if (!isClient) {
@@ -18,5 +23,5 @@ export function OperationsPageClient() {
     );
   }
 
-  return <OperationsWorkbench />;
+  return <OperationsWorkbench dataMode={dataMode} />;
 }

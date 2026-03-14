@@ -13,6 +13,7 @@ import {
 import type { ActivityEvent, CascadeResult, RegionState, Signal } from "@/lib/types";
 
 const ACTIVE_SIGNAL_WINDOW_MS = 1000 * 60 * 60 * 6;
+export type DataMode = "live" | "simulated";
 
 const asTimestamp = (isoString: string): number => new Date(isoString).getTime();
 
@@ -47,7 +48,7 @@ const sanitizeSignals = (signals: Signal[]): Signal[] => {
   );
 };
 
-export const useStratawatch = () => {
+export const useStratawatch = (dataMode: DataMode = "live") => {
   const [regions, setRegions] = useState<RegionState[]>(() => createInitialRegionState());
   const [signals, setSignals] = useState<Signal[]>([]);
   const [activityFeed, setActivityFeed] = useState<ActivityEvent[]>([]);
@@ -104,7 +105,7 @@ export const useStratawatch = () => {
 
     const fetchBurst = async () => {
       try {
-        const response = await fetch("/api/signal-burst?count=5", { cache: "no-store" });
+        const response = await fetch(`/api/signal-burst?count=5&mode=${dataMode}`, { cache: "no-store" });
         if (!response.ok) {
           throw new Error(`Failed to fetch burst (${response.status})`);
         }
@@ -115,8 +116,10 @@ export const useStratawatch = () => {
         }
       } catch {
         if (!cancelled) {
-          const fallbackSignals = generateSignalBurst(REGION_CATALOG.map((region) => region.id), 5);
-          ingestSignalBurst(fallbackSignals);
+          if (dataMode === "simulated") {
+            const fallbackSignals = generateSignalBurst(REGION_CATALOG.map((region) => region.id), 5);
+            ingestSignalBurst(fallbackSignals);
+          }
         }
       } finally {
         if (!cancelled) {
@@ -132,7 +135,7 @@ export const useStratawatch = () => {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [ingestSignalBurst]);
+  }, [dataMode, ingestSignalBurst]);
 
   const selectedRegion = useMemo(
     () => regions.find((region) => region.id === selectedRegionId) ?? null,
@@ -199,5 +202,6 @@ export const useStratawatch = () => {
     lastUpdated,
     networkTemplate: getNetworkTemplate(),
     formatSignalType,
+    dataMode,
   };
 };

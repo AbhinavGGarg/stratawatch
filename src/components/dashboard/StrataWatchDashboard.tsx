@@ -5,6 +5,7 @@ import { BriefingPanel } from "@/components/dashboard/BriefingPanel";
 import { CascadeFocusPanel } from "@/components/dashboard/CascadeFocusPanel";
 import { MapPanel } from "@/components/dashboard/MapPanel";
 import { SignalsPanel } from "@/components/dashboard/SignalsPanel";
+import type { DataMode } from "@/hooks/use-stratawatch";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { useStratawatch } from "@/hooks/use-stratawatch";
 
@@ -12,9 +13,10 @@ export type DashboardView = "overview" | "signals" | "risk-map" | "cascade-simul
 
 interface StrataWatchDashboardProps {
   view: DashboardView;
+  dataMode?: DataMode;
 }
 
-export function StrataWatchDashboard({ view }: StrataWatchDashboardProps) {
+export function StrataWatchDashboard({ view, dataMode = "live" }: StrataWatchDashboardProps) {
   const {
     regions,
     signals,
@@ -30,7 +32,7 @@ export function StrataWatchDashboard({ view }: StrataWatchDashboardProps) {
     lastUpdated,
     networkTemplate,
     formatSignalType,
-  } = useStratawatch();
+  } = useStratawatch(dataMode);
 
   const renderCenterPanel = () => {
     if (view === "signals") {
