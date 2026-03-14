@@ -51,7 +51,7 @@ export const useStratawatch = () => {
   const [regions, setRegions] = useState<RegionState[]>(() => createInitialRegionState());
   const [signals, setSignals] = useState<Signal[]>([]);
   const [activityFeed, setActivityFeed] = useState<ActivityEvent[]>([]);
-  const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
+  const [selectedRegionId, setSelectedRegionId] = useState<string | null>(REGION_CATALOG[0]?.id ?? null);
   const [cascadesByRegion, setCascadesByRegion] = useState<Record<string, CascadeResult>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(nowIso());
