@@ -168,8 +168,10 @@ export const appendRegionEvent = (
       return region;
     }
 
+    const dedupedRecentEvents = [message, ...region.recentEvents.filter((event) => event !== message)].slice(0, 6);
+
     return {
       ...region,
-      recentEvents: [message, ...region.recentEvents].slice(0, 6),
+      recentEvents: dedupedRecentEvents,
     };
   });
