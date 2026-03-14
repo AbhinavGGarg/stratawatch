@@ -131,8 +131,8 @@ export function BriefingPanel({
                     <p className="text-xs text-zinc-500">No recent activity detected for this region.</p>
                   ) : (
                     <>
-                      {selectedRegion.recentEvents.map((event) => (
-                        <p key={event} className="text-xs text-zinc-300">
+                      {selectedRegion.recentEvents.map((event, index) => (
+                        <p key={`${event}-${index}`} className="text-xs text-zinc-300">
                           • {event}
                         </p>
                       ))}
