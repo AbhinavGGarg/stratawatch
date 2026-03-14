@@ -1,5 +1,5 @@
-import { DashboardPageClient } from "@/components/dashboard/DashboardPageClient";
+import { redirect } from "next/navigation";
 
 export default function CascadeSimulatorPage() {
-  return <DashboardPageClient view="cascade-simulator" />;
+  redirect("/command-center");
 }

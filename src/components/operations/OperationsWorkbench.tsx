@@ -33,6 +33,7 @@ export function OperationsWorkbench() {
   const setRegion = useCommandStore((state) => state.setRegion);
   const setScale = useCommandStore((state) => state.setScale);
   const setSite = useCommandStore((state) => state.setSite);
+  const selectedSite = useCommandStore((state) => state.selectedSite);
   const sites = useCommandStore((state) => state.sites);
   const opsFeed = useCommandStore((state) => state.opsFeed);
   const pushOpsFeed = useCommandStore((state) => state.pushOpsFeed);
@@ -48,6 +49,17 @@ export function OperationsWorkbench() {
     if (!selectedRegionId) return [];
     return sites.filter((site) => site.regionId === selectedRegionId);
   }, [selectedRegionId, sites]);
+
+  useEffect(() => {
+    if (!selectedRegionId || filteredSites.length === 0) {
+      return;
+    }
+
+    if (!selectedSite || selectedSite.regionId !== selectedRegionId) {
+      setSite(filteredSites[0]?.id ?? null);
+      setScale("site");
+    }
+  }, [filteredSites, selectedRegionId, selectedSite, setScale, setSite]);
 
   useOpsStream(panel.demoModeEnabled);
 
@@ -136,7 +148,7 @@ export function OperationsWorkbench() {
 
       <div className="relative z-10 mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-zinc-900/70 px-4 py-3">
         <div>
-          <h1 className="text-base font-semibold text-zinc-50">StrataWatch Operations Layer</h1>
+          <h1 className="text-base font-semibold text-zinc-50">StrataWatch Command Center</h1>
           <p className="text-xs text-zinc-400">Global risk intelligence fused with site and building-level emergency simulation</p>
         </div>
         <div className="flex items-center gap-2">

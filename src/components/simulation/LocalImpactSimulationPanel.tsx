@@ -13,8 +13,11 @@ const BuildingScene = dynamic(
 );
 
 export function LocalImpactSimulationPanel() {
+  const activeRegionId = useCommandStore((state) => state.panel.activeRegionId);
+  const sites = useCommandStore((state) => state.sites);
   const selectedSite = useCommandStore((state) => state.selectedSite);
   const selectedBuildingId = useCommandStore((state) => state.selectedBuildingId);
+  const setSite = useCommandStore((state) => state.setSite);
   const setBuilding = useCommandStore((state) => state.setBuilding);
   const latestSimulation = useCommandStore((state) => state.latestSimulation);
   const setSimulation = useCommandStore((state) => state.setSimulation);
@@ -27,9 +30,29 @@ export function LocalImpactSimulationPanel() {
     () => selectedSite?.buildings.find((building) => building.id === selectedBuildingId) ?? null,
     [selectedSite, selectedBuildingId],
   );
+  const availableSites = useMemo(
+    () => sites.filter((site) => site.regionId === activeRegionId),
+    [activeRegionId, sites],
+  );
 
   const runSimulation = async () => {
-    if (!selectedBuilding) {
+    let buildingForRun = selectedBuilding;
+
+    if (!buildingForRun && availableSites.length > 0) {
+      const fallbackSite = selectedSite ?? availableSites[0] ?? null;
+      const fallbackBuilding = fallbackSite?.buildings[0] ?? null;
+
+      if (fallbackSite && (!selectedSite || selectedSite.id !== fallbackSite.id)) {
+        setSite(fallbackSite.id);
+      }
+
+      if (fallbackBuilding) {
+        setBuilding(fallbackBuilding.id);
+        buildingForRun = fallbackBuilding;
+      }
+    }
+
+    if (!buildingForRun) {
       return;
     }
 
@@ -43,7 +66,7 @@ export function LocalImpactSimulationPanel() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          buildingId: selectedBuilding.id,
+          buildingId: buildingForRun.id,
           scenario: activeScenario,
         }),
       });
@@ -64,7 +87,10 @@ export function LocalImpactSimulationPanel() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold text-zinc-100">Local Impact Simulation</h3>
-          <p className="text-xs text-zinc-400">Building-level emergency simulation integrated into StrataWatch.</p>
+          <p className="text-xs text-zinc-400">
+            Building-level emergency simulation integrated into StrataWatch.
+            {selectedSite ? ` Active site: ${selectedSite.name}.` : " Select a region on map to auto-load a site."}
+          </p>
         </div>
         <button
           type="button"
@@ -105,7 +131,20 @@ export function LocalImpactSimulationPanel() {
               </div>
             </>
           ) : (
-            <p className="text-xs text-zinc-500">Select a site from operations panel to enable simulation.</p>
+            <div className="space-y-2">
+              <p className="text-xs text-zinc-500">No active site selected yet.</p>
+              {availableSites.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setSite(availableSites[0]?.id ?? null)}
+                  className="rounded-lg border border-cyan-400/35 bg-cyan-500/15 px-2 py-1.5 text-xs text-cyan-100"
+                >
+                  Use {availableSites[0]?.name}
+                </button>
+              ) : (
+                <p className="text-xs text-zinc-600">Select a mapped region on the map to load simulation sites.</p>
+              )}
+            </div>
           )}
         </div>
 

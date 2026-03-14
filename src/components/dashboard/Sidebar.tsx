@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, BarChart3, Globe2, Radar, TowerControl, Waypoints } from "lucide-react";
+import { Activity, BarChart3, Globe2, Radar, TowerControl } from "lucide-react";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import type { ActivityEvent } from "@/lib/types";
 
@@ -20,8 +20,7 @@ const navigationItems = [
   { icon: Globe2, label: "Overview", href: "/overview" },
   { icon: Radar, label: "Signals", href: "/signals" },
   { icon: BarChart3, label: "Risk Map", href: "/risk-map" },
-  { icon: Waypoints, label: "Cascade Simulator", href: "/cascade-simulator" },
-  { icon: TowerControl, label: "Operations", href: "/operations" },
+  { icon: TowerControl, label: "Command Center", href: "/command-center" },
 ];
 
 const statusCards = [
@@ -51,7 +50,12 @@ const formatUpdatedLabel = (isoString: string): string =>
 
 export function Sidebar({ stats, activityFeed, lastUpdated }: SidebarProps) {
   const pathname = usePathname();
-  const normalizedPath = pathname === "/" ? "/overview" : pathname;
+  const normalizedPath =
+    pathname === "/"
+      ? "/overview"
+      : pathname === "/operations" || pathname === "/cascade-simulator"
+        ? "/command-center"
+        : pathname;
 
   return (
     <aside className="flex h-full min-h-0 flex-col gap-4 rounded-3xl border border-white/10 bg-zinc-900/75 p-4 shadow-2xl shadow-black/30 backdrop-blur-lg">
