@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Building2, Compass, Globe2, Sparkles, TowerControl } from "lucide-react";
 import { BriefingPanel } from "@/components/dashboard/BriefingPanel";
@@ -8,6 +8,7 @@ import { MapPanel } from "@/components/dashboard/MapPanel";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { LocalImpactSimulationPanel } from "@/components/simulation/LocalImpactSimulationPanel";
 import { useOpsStream } from "@/hooks/use-ops-stream";
+import { DEMO_MODE_SCRIPT } from "@/mock-data/demo-mode";
 import { useStratawatch } from "@/hooks/use-stratawatch";
 import { useCommandStore } from "@/store/command-store";
 
@@ -30,11 +31,14 @@ export function OperationsWorkbench() {
 
   const panel = useCommandStore((state) => state.panel);
   const setRegion = useCommandStore((state) => state.setRegion);
+  const setScale = useCommandStore((state) => state.setScale);
   const setSite = useCommandStore((state) => state.setSite);
   const sites = useCommandStore((state) => state.sites);
   const opsFeed = useCommandStore((state) => state.opsFeed);
   const pushOpsFeed = useCommandStore((state) => state.pushOpsFeed);
   const setDemoMode = useCommandStore((state) => state.setDemoMode);
+  const [demoRunning, setDemoRunning] = useState(false);
+  const demoTimersRef = useRef<number[]>([]);
 
   useEffect(() => {
     setRegion(selectedRegionId);
@@ -47,6 +51,20 @@ export function OperationsWorkbench() {
 
   useOpsStream(panel.demoModeEnabled);
 
+  const clearDemoTimers = () => {
+    for (const timer of demoTimersRef.current) {
+      window.clearTimeout(timer);
+    }
+    demoTimersRef.current = [];
+  };
+
+  useEffect(
+    () => () => {
+      clearDemoTimers();
+    },
+    [],
+  );
+
   const blendedActivity = useMemo(() => {
     return [...opsFeed, ...activityFeed]
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
@@ -54,7 +72,14 @@ export function OperationsWorkbench() {
   }, [activityFeed, opsFeed]);
 
   const runDemoMode = () => {
+    clearDemoTimers();
+    setDemoRunning(true);
     setDemoMode(true);
+    setScale("global");
+
+    const firstRegion = DEMO_MODE_SCRIPT[0]?.regionId ?? "suez_corridor";
+    setSelectedRegionId(firstRegion);
+
     pushOpsFeed([
       {
         id: `manual-demo-${Date.now()}`,
@@ -63,9 +88,46 @@ export function OperationsWorkbench() {
         level: "info",
         title: "Demo Mode Started",
         message: "Deterministic multi-scale sequence started: GLOBAL -> REGIONAL -> SITE -> BUILDING.",
-        regionId: selectedRegionId ?? undefined,
+        regionId: selectedRegionId ?? firstRegion ?? undefined,
       },
     ]);
+
+    DEMO_MODE_SCRIPT.forEach((event, index) => {
+      const timer = window.setTimeout(() => {
+        const shiftedEvent = {
+          ...event,
+          id: `manual-script-${index}-${Date.now()}`,
+          timestamp: new Date(Date.now()).toISOString(),
+        };
+
+        if (shiftedEvent.regionId) {
+          setSelectedRegionId(shiftedEvent.regionId);
+          setRegion(shiftedEvent.regionId);
+          setScale("regional");
+        }
+
+        if (shiftedEvent.siteId) {
+          setSite(shiftedEvent.siteId);
+          setScale("site");
+        }
+
+        if (shiftedEvent.buildingId) {
+          setScale("building");
+        }
+
+        if (index === 2) {
+          triggerDisruption();
+        }
+
+        pushOpsFeed([shiftedEvent]);
+
+        if (index === DEMO_MODE_SCRIPT.length - 1) {
+          setDemoRunning(false);
+        }
+      }, index * 2200);
+
+      demoTimersRef.current.push(timer);
+    });
   };
 
   return (
@@ -81,10 +143,11 @@ export function OperationsWorkbench() {
           <button
             type="button"
             onClick={runDemoMode}
+            disabled={demoRunning}
             className="inline-flex items-center gap-1 rounded-lg border border-cyan-400/40 bg-cyan-500/15 px-3 py-1.5 text-xs text-cyan-100"
           >
             <Sparkles className="h-3.5 w-3.5" />
-            Run Demo Mode
+            {demoRunning ? "Demo Running..." : "Run Demo Mode"}
           </button>
           <span className="rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-[11px] text-zinc-300">
             Scale: {panel.activeScale.toUpperCase()}
