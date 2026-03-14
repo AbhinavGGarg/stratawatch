@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Activity, BarChart3, Globe2, Radar, Waypoints } from "lucide-react";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import type { ActivityEvent } from "@/lib/types";
@@ -15,10 +17,10 @@ interface SidebarProps {
 }
 
 const navigationItems = [
-  { icon: Globe2, label: "Overview" },
-  { icon: Radar, label: "Signals" },
-  { icon: BarChart3, label: "Risk Map" },
-  { icon: Waypoints, label: "Cascade Simulator" },
+  { icon: Globe2, label: "Overview", href: "/overview" },
+  { icon: Radar, label: "Signals", href: "/signals" },
+  { icon: BarChart3, label: "Risk Map", href: "/risk-map" },
+  { icon: Waypoints, label: "Cascade Simulator", href: "/cascade-simulator" },
 ];
 
 const statusCards = [
@@ -47,6 +49,9 @@ const formatUpdatedLabel = (isoString: string): string =>
   });
 
 export function Sidebar({ stats, activityFeed, lastUpdated }: SidebarProps) {
+  const pathname = usePathname();
+  const normalizedPath = pathname === "/" ? "/overview" : pathname;
+
   return (
     <aside className="flex h-full min-h-0 flex-col gap-4 rounded-3xl border border-white/10 bg-zinc-900/75 p-4 shadow-2xl shadow-black/30 backdrop-blur-lg">
       <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -63,15 +68,20 @@ export function Sidebar({ stats, activityFeed, lastUpdated }: SidebarProps) {
         <nav className="space-y-1">
           {navigationItems.map((item) => {
             const Icon = item.icon;
+            const isActive = normalizedPath === item.href;
             return (
-              <button
+              <Link
                 key={item.label}
-                type="button"
-                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-zinc-300 transition hover:bg-white/10 hover:text-zinc-100"
+                href={item.href}
+                className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm transition ${
+                  isActive
+                    ? "border border-orange-400/30 bg-orange-500/15 text-orange-100"
+                    : "text-zinc-300 hover:bg-white/10 hover:text-zinc-100"
+                }`}
               >
                 <Icon className="h-4 w-4" />
                 {item.label}
-              </button>
+              </Link>
             );
           })}
         </nav>

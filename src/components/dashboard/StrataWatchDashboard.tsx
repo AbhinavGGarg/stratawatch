@@ -2,13 +2,22 @@
 
 import { motion } from "framer-motion";
 import { BriefingPanel } from "@/components/dashboard/BriefingPanel";
+import { CascadeFocusPanel } from "@/components/dashboard/CascadeFocusPanel";
 import { MapPanel } from "@/components/dashboard/MapPanel";
+import { SignalsPanel } from "@/components/dashboard/SignalsPanel";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { useStratawatch } from "@/hooks/use-stratawatch";
 
-export function StrataWatchDashboard() {
+export type DashboardView = "overview" | "signals" | "risk-map" | "cascade-simulator";
+
+interface StrataWatchDashboardProps {
+  view: DashboardView;
+}
+
+export function StrataWatchDashboard({ view }: StrataWatchDashboardProps) {
   const {
     regions,
+    signals,
     selectedRegion,
     selectedRegionId,
     setSelectedRegionId,
@@ -22,6 +31,33 @@ export function StrataWatchDashboard() {
     networkTemplate,
     formatSignalType,
   } = useStratawatch();
+
+  const renderCenterPanel = () => {
+    if (view === "signals") {
+      return <SignalsPanel signals={signals} regions={regions} formatSignalType={formatSignalType} />;
+    }
+
+    if (view === "cascade-simulator") {
+      return (
+        <CascadeFocusPanel
+          selectedRegion={selectedRegion}
+          cascadeResult={cascadeResult}
+          onSimulate={triggerDisruption}
+          nodes={networkTemplate.nodes}
+          links={networkTemplate.links}
+        />
+      );
+    }
+
+    return (
+      <MapPanel
+        regions={regions}
+        selectedRegionId={selectedRegionId}
+        onSelectRegion={setSelectedRegionId}
+        isLoading={isLoading}
+      />
+    );
+  };
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.14),transparent_48%),radial-gradient(circle_at_bottom_right,_rgba(250,204,21,0.12),transparent_44%),#0b0b0f] px-3 py-3 md:px-4 md:py-4">
@@ -38,12 +74,7 @@ export function StrataWatchDashboard() {
           transition={{ duration: 0.4, delay: 0.06 }}
           className="min-h-[56vh] xl:min-h-0"
         >
-          <MapPanel
-            regions={regions}
-            selectedRegionId={selectedRegionId}
-            onSelectRegion={setSelectedRegionId}
-            isLoading={isLoading}
-          />
+          {renderCenterPanel()}
         </motion.div>
 
         <motion.div initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, delay: 0.1 }}>
