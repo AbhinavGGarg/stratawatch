@@ -1,0 +1,347 @@
+STRATAWATCH MVP EXTENSION BLUEPRINT (ADDITIVE, NON-BREAKING)
+
+Status:
+- Existing StrataWatch routes/features remain intact.
+- Added an advanced integrated route: /operations
+- Added scaffolding for global intelligence + regional cascades + city/site drill-down + building-level simulation.
+- Added deterministic demo mode stream and building simulation API.
+
+================================================================================
+1) PRODUCT ARCHITECTURE OVERVIEW
+================================================================================
+Core architecture (hackathon-realistic, venture-grade feel):
+
+A. Experience Layer (Next.js App Router)
+- Existing production pages:
+  - /overview
+  - /signals
+  - /risk-map
+  - /cascade-simulator
+- New additive page:
+  - /operations (multi-scale command experience)
+
+B. Intelligence Layer
+- Hybrid signal ingestion:
+  - Live feeds: USGS, NASA EONET, Open-Meteo
+  - Simulated fallback stream for continuity
+- Risk scoring engine:
+  - Signal density, severity, recency decay, neighbor pressure
+
+C. Cascade Layer
+- Infrastructure dependency graph
+- Propagation logic and timeline visualization
+
+D. Site/Building Layer
+- Seeded site clusters and buildings tied to regions
+- Building scenario simulation API
+- 3D tactical scene with hazard overlays
+
+E. AI Layer (MVP-compatible)
+- Prompt templates for regional briefing and incident summary
+- Deterministic fallback summarization + agent consensus
+
+F. Ops Stream Layer
+- SSE stream route for demo mode operational activity
+- Deterministic feed for reliable judging demos
+
+================================================================================
+2) UX STRUCTURE + FEATURE MAP
+================================================================================
+Primary user flow:
+GLOBAL -> REGIONAL -> CITY/SITE -> BUILDING -> INCIDENT RECOMMENDATIONS
+
+Views:
+- Overview: Macro status + map + feed
+- Signals: Source-aware event intelligence table
+- Risk Map: Global hex risk exploration
+- Cascade Simulator: Network stress propagation
+- Operations (new): Unified macro->micro tactical workflow
+
+/operations layout:
+- Left: Existing system sidebar + blended feed
+- Center top: Global map
+- Center bottom: Site drill-down cards for selected region
+- Right top: Regional intelligence + cascade panel
+- Right bottom: Building-level 3D tactical simulation panel
+
+================================================================================
+3) FULL FOLDER STRUCTURE (ADDITIONS)
+================================================================================
+Added:
+- src/types/command-types.ts
+- src/store/command-store.ts
+- src/mock-data/site-seed.ts
+- src/mock-data/demo-mode.ts
+- src/services/briefing-service.ts
+- src/services/building-sim-service.ts
+- src/ai/prompts/region-briefing.ts
+- src/ai/prompts/incident-summary.ts
+- src/hooks/use-ops-stream.ts
+- src/components/operations/OperationsWorkbench.tsx
+- src/components/operations/OperationsPageClient.tsx
+- src/components/simulation/BuildingScene.tsx
+- src/components/simulation/LocalImpactSimulationPanel.tsx
+- src/app/operations/page.tsx
+- src/app/api/ops/stream/route.ts
+- src/app/api/building/simulate/route.ts
+
+Existing core (unchanged behavior):
+- src/components/dashboard/*
+- src/app/overview/page.tsx
+- src/app/signals/page.tsx
+- src/app/risk-map/page.tsx
+- src/app/cascade-simulator/page.tsx
+
+================================================================================
+4) KEY TYPESCRIPT MODELS (IMPLEMENTED)
+================================================================================
+In src/types/command-types.ts:
+- SignalRecord
+- Region
+- RiskScore
+- InfrastructureNode
+- DependencyEdge
+- CascadeEvent
+- Site
+- Building
+- SimulationScenario
+- HazardZone
+- AgentAssessment
+- IncidentSummary
+- BuildingSimulationResult
+- ActivityFeedItem
+- PanelState
+
+These are clean, extensible, and suitable for future API-backed production evolution.
+
+================================================================================
+5) MAIN PAGE LAYOUT ARCHITECTURE
+================================================================================
+Current production layout remains.
+New additive layout at /operations:
+- Top command ribbon with demo mode trigger + scale indicator
+- 3-column command layout on desktop
+- Responsive collapse behavior inherited from Tailwind grid patterns
+- No destructive changes to existing dashboard UX
+
+================================================================================
+6) REUSABLE COMPONENT INVENTORY
+================================================================================
+New reusable components:
+- OperationsWorkbench (macro->micro fusion shell)
+- OperationsPageClient (hydration-safe wrapper)
+- LocalImpactSimulationPanel (scenario runner + incident output)
+- BuildingScene (3D R3F visualization)
+
+Reused existing components:
+- Sidebar
+- MapPanel
+- BriefingPanel
+
+================================================================================
+7) FRONTEND SCAFFOLDING FOR PRIMARY VIEWS
+================================================================================
+Implemented:
+- Existing four top-level views (already working)
+- New /operations route integrating:
+  - map intelligence
+  - regional briefing + cascade
+  - site drill-down
+  - building simulation runner
+
+Future simple extension:
+- Add navigation link to /operations in sidebar (optional, currently additive by direct URL)
+
+================================================================================
+8) BACKEND API ROUTE PLAN (IMPLEMENTED + READY)
+================================================================================
+Existing:
+- /api/signal-burst (hybrid live + simulated)
+
+Added:
+- /api/ops/stream
+  - SSE operational feed
+  - deterministic demo script emission
+- /api/building/simulate
+  - POST { buildingId, scenario, severity? }
+  - returns deterministic BuildingSimulationResult
+
+================================================================================
+9) MOCK/LIVE SIGNAL INGESTION LOGIC
+================================================================================
+Already active in app:
+- USGS + EONET + Open-Meteo + simulated fallback
+- deduped and recency-window managed
+- provenance surfaced in UI
+
+Quality strategy:
+- Live data drives realism
+- Simulation ensures continuity during outages/rate limits
+
+================================================================================
+10) RISK SCORING LOGIC
+================================================================================
+Current risk engine logic includes:
+- signal density
+- signal severity
+- neighbor pressure
+- event pressure
+- recency decay
+- smoothing
+
+Upgrade-ready extension path:
+- add infrastructure sensitivity priors per region
+- add active cascade load as direct term
+- add volatility momentum factor
+
+================================================================================
+11) CASCADE SIMULATION LOGIC
+================================================================================
+Current model supports:
+- node templates + dependency links
+- trigger nodes selected by risk
+- propagation by weighted probabilities
+- snapshots at minute 0/5/15/30
+- failed vs stressed counts
+
+Visualized via force graph + timeline areas.
+
+================================================================================
+12) BUILDING SIMULATION LOGIC (ADDED)
+================================================================================
+Deterministic simulation service:
+- src/services/building-sim-service.ts
+- inputs: building + scenario + optional severity
+- outputs:
+  - hazard zones (color-coded overlays)
+  - agent assessments
+  - incident summary with tactical recommendations
+
+Scenarios currently available:
+- fire
+- earthquake_damage
+- flood_risk
+- smoke_spread
+- structural_compromise
+- evacuation_stress
+
+================================================================================
+13) AI BRIEFING + INCIDENT PROMPT TEMPLATES
+================================================================================
+Added templates:
+- src/ai/prompts/region-briefing.ts
+- src/ai/prompts/incident-summary.ts
+
+Fallback service:
+- src/services/briefing-service.ts
+- Generates structured analyst-style output when LLM unavailable.
+
+================================================================================
+14) STATE MANAGEMENT PLAN (IMPLEMENTED)
+================================================================================
+Zustand store:
+- src/store/command-store.ts
+
+State domains:
+- panel state (scale, selection, demo mode)
+- site/building selection
+- latest simulation output
+- operations feed
+
+Keeps local tactical state separate from global dashboard hook state.
+
+================================================================================
+15) PERFORMANCE OPTIMIZATION PLAN
+================================================================================
+Implemented/perceived:
+- Existing map + charts optimized and stable
+- 3D module lazily imported via dynamic import
+- deterministic APIs avoid unpredictable retries
+- SSE stream finite and controlled for demo mode
+
+Next optimizations:
+- virtualize large signal tables >500 rows
+- workerize heavy simulation if complexity increases
+- reduce R3F post-processing for low-end devices
+
+================================================================================
+16) DESIGN SYSTEM GUIDANCE
+================================================================================
+Current design language preserved:
+- dark command center palette
+- high-contrast signal colors
+- soft shadows, rounded surfaces, subtle motion
+
+For new layer:
+- use existing tokens and panel style
+- keep semantic hazard color legend:
+  - red/orange/yellow/blue/green/cyan/purple
+
+================================================================================
+17) DEPLOYMENT SETUP
+================================================================================
+Current deploy path unchanged:
+- GitHub -> Vercel auto deploy on main
+
+No extra infra required for new additions:
+- APIs run as Next route handlers
+- SSE and building simulation are API-route based
+
+Recommended env vars (future):
+- OPENAI_API_KEY (for live LLM briefings)
+- DEMO_MODE_DEFAULT=true/false
+
+================================================================================
+18) DEMO MODE IMPLEMENTATION (ADDED)
+================================================================================
+Deterministic script:
+- src/mock-data/demo-mode.ts
+SSE stream:
+- /api/ops/stream
+Hook:
+- src/hooks/use-ops-stream.ts
+
+Behavior:
+- button “Run Demo Mode” on /operations
+- streams operational sequence across signal/risk/cascade/simulation
+
+================================================================================
+19) POLISHED SEED DATA (ADDED)
+================================================================================
+Seeded sites/buildings linked to real-world regions:
+- Suez North Operations Cluster
+- Gulf Infrastructure Park
+- Malacca Gateway Cluster
+
+Each site has:
+- city
+- critical assets
+- 2 buildings with type, occupancy, geometry estimate, ingress/egress points
+
+================================================================================
+20) ADVANCED TOUCHES (WOW FACTOR, MVP-SAFE)
+================================================================================
+Now included:
+- Multi-scale operational workflow in one route (/operations)
+- Building-level 3D tactical simulation integrated with macro risk context
+- Deterministic ops stream for reliable judging demos
+- Agent-consensus incident output with confidence
+- Prompt-layer ready for real LLM integration
+
+High-impact next additions (fast to build):
+- Add sidebar link to /operations
+- Add “Scenario Replay” scrubber for building simulation timeline
+- Add uncertainty meter with data completeness indicator on every panel
+- Add one-click “Generate executive report” export (PDF/markdown)
+
+================================================================================
+RUN / VALIDATION
+================================================================================
+- npm run lint
+- npm run build
+- /operations route for the integrated macro->micro demo
+
+================================================================================
+HACKATHON PITCH LINE
+================================================================================
+“StrataWatch is a multi-scale disruption intelligence platform that starts at global risk detection, predicts infrastructure cascade paths, and drills directly into building-level responder simulations to produce actionable incident guidance in minutes.”

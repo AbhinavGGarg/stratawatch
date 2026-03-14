@@ -1,0 +1,78 @@
+import type { ActivityFeedItem } from "@/types/command-types";
+
+const mk = (
+  idx: number,
+  source: ActivityFeedItem["source"],
+  level: ActivityFeedItem["level"],
+  title: string,
+  message: string,
+  regionId?: string,
+  siteId?: string,
+  buildingId?: string,
+): ActivityFeedItem => ({
+  id: `demo-${idx}`,
+  timestamp: new Date(Date.now() + idx * 1000 * 20).toISOString(),
+  source,
+  level,
+  title,
+  message,
+  regionId,
+  siteId,
+  buildingId,
+});
+
+export const DEMO_MODE_SCRIPT: ActivityFeedItem[] = [
+  mk(
+    1,
+    "signal",
+    "warning",
+    "Signal Cluster Detected",
+    "Seismic + weather convergence detected across Suez Corridor with rising logistics stress.",
+    "suez_corridor",
+  ),
+  mk(
+    2,
+    "risk",
+    "warning",
+    "Regional Risk Updated",
+    "Suez Corridor risk score moved from 0.58 to 0.73 in 90 minutes.",
+    "suez_corridor",
+  ),
+  mk(
+    3,
+    "cascade",
+    "critical",
+    "Cascade Trigger",
+    "Power-dispatch dependency stress propagated into medical and telecom nodes.",
+    "suez_corridor",
+  ),
+  mk(
+    4,
+    "system",
+    "info",
+    "Site Drill-down Ready",
+    "Suez North Operations Cluster prepared with 2 buildings for local impact simulation.",
+    "suez_corridor",
+    "suez-north-cluster",
+  ),
+  mk(
+    5,
+    "simulation",
+    "warning",
+    "Local Impact Simulation",
+    "Fire scenario generated for Suez Port Command Center with constrained eastern egress.",
+    "suez_corridor",
+    "suez-north-cluster",
+    "suez-port-command",
+  ),
+  mk(
+    6,
+    "simulation",
+    "critical",
+    "Agent Consensus Completed",
+    "Responder access + structural agents recommend north entry and restricted mezzanine movement.",
+    "suez_corridor",
+    "suez-north-cluster",
+    "suez-port-command",
+  ),
+];
