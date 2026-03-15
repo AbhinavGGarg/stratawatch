@@ -1,3 +1,4 @@
+import { REGION_CATALOG } from "@/lib/region-catalog";
 import type { Building, Site } from "@/types/command-types";
 
 const makeBuilding = (input: Omit<Building, "ingressPoints" | "egressPoints">): Building => ({
@@ -131,7 +132,7 @@ const seAsiaBuildings: Building[] = [
   }),
 ];
 
-export const SITE_SEED: Site[] = [
+const baseSites: Site[] = [
   {
     id: "suez-north-cluster",
     regionId: "suez_corridor",
@@ -160,6 +161,89 @@ export const SITE_SEED: Site[] = [
     buildings: seAsiaBuildings,
   },
 ];
+
+const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
+
+const stableHash = (value: string): number => {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(index);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+};
+
+const seededRandom = (seed: number): (() => number) => {
+  let state = seed || 1;
+  return () => {
+    state = (state * 48271) % 2147483647;
+    return (state & 2147483647) / 2147483647;
+  };
+};
+
+const buildingTypes: Building["type"][] = ["office", "hospital", "data_center", "warehouse", "transport"];
+
+const humanCityName = (regionName: string): string => {
+  const cleaned = regionName.replace(/\b(Corridor|Belt|Hub|Route|Grid|Lanes|Sea|Coast)\b/gi, "").trim();
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+  return parts.slice(0, 2).join(" ") || regionName;
+};
+
+const createGeneratedBuildings = (
+  regionId: string,
+  regionName: string,
+  siteId: string,
+  center: [number, number],
+  seed: number,
+): Building[] => {
+  const random = seededRandom(seed);
+
+  return Array.from({ length: 2 }, (_, index) => {
+    const type = buildingTypes[(seed + index) % buildingTypes.length] ?? "office";
+    const lng = clamp(center[0] + (random() * 2 - 1) * 0.75, -179.8, 179.8);
+    const lat = clamp(center[1] + (random() * 2 - 1) * 0.45, -84, 84);
+    const width = Math.round(14 + random() * 12);
+    const depth = Math.round(10 + random() * 10);
+
+    return makeBuilding({
+      id: `${regionId}-building-${index + 1}`,
+      siteId,
+      regionId,
+      name: `${humanCityName(regionName)} ${index === 0 ? "Operations Hub" : "Emergency Node"}`,
+      address: `${humanCityName(regionName)} Sector ${index + 1}`,
+      coordinates: [lng, lat],
+      footprint: [
+        [0, 0],
+        [width, 0],
+        [width, depth],
+        [0, depth],
+      ],
+      estimatedHeightMeters: Math.round(18 + random() * 42),
+      occupancy: Math.round(120 + random() * 360),
+      type,
+    });
+  });
+};
+
+const existingRegionIds = new Set(baseSites.map((site) => site.regionId));
+
+const generatedSites: Site[] = REGION_CATALOG.filter((region) => !existingRegionIds.has(region.id)).map((region) => {
+  const seed = stableHash(region.id);
+  const siteId = `${region.id}-ops-cluster`;
+  const city = humanCityName(region.name);
+
+  return {
+    id: siteId,
+    regionId: region.id,
+    city,
+    name: `${region.name} Operations Cluster`,
+    coordinates: region.center,
+    criticalAssets: ["Emergency coordination", "Power relay", "Transit logistics"],
+    buildings: createGeneratedBuildings(region.id, region.name, siteId, region.center, seed),
+  };
+});
+
+export const SITE_SEED: Site[] = [...baseSites, ...generatedSites];
 
 export const SCENARIO_PRESETS = [
   {

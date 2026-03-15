@@ -19,10 +19,8 @@ interface BatchSimulationResult {
 }
 
 export function LocalImpactSimulationPanel() {
-  const sites = useCommandStore((state) => state.sites);
   const selectedSite = useCommandStore((state) => state.selectedSite);
   const selectedBuildingId = useCommandStore((state) => state.selectedBuildingId);
-  const setSite = useCommandStore((state) => state.setSite);
   const setBuilding = useCommandStore((state) => state.setBuilding);
   const latestSimulation = useCommandStore((state) => state.latestSimulation);
   const setSimulation = useCommandStore((state) => state.setSimulation);
@@ -157,27 +155,10 @@ export function LocalImpactSimulationPanel() {
       <div className="grid gap-2 md:grid-cols-2">
         <div className="rounded-xl border border-white/10 bg-black/25 p-3">
           <p className="mb-2 text-[11px] uppercase tracking-wide text-zinc-500">Site / Building</p>
-
-          <div className="mb-2 flex flex-wrap gap-1.5">
-            {sites.map((site) => (
-              <button
-                key={site.id}
-                type="button"
-                onClick={() => setSite(site.id)}
-                className={`rounded-md border px-2 py-1 text-[11px] transition ${
-                  selectedSite?.id === site.id
-                    ? "border-cyan-400/45 bg-cyan-500/16 text-cyan-100"
-                    : "border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10"
-                }`}
-              >
-                {site.city}
-              </button>
-            ))}
-          </div>
-
           {selectedSite ? (
             <>
               <p className="text-sm text-zinc-100">{selectedSite.name}</p>
+              <p className="text-[11px] text-zinc-500">Region-linked cluster auto-updates from map selection.</p>
               <div className="mt-2 space-y-1.5">
                 {selectedSite.buildings.map((building) => (
                   <button

@@ -52,7 +52,7 @@ export const useStratawatch = (dataMode: DataMode = "live") => {
   const [regions, setRegions] = useState<RegionState[]>(() => createInitialRegionState());
   const [signals, setSignals] = useState<Signal[]>([]);
   const [activityFeed, setActivityFeed] = useState<ActivityEvent[]>([]);
-  const [selectedRegionId, setSelectedRegionId] = useState<string | null>(REGION_CATALOG[0]?.id ?? null);
+  const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [cascadesByRegion, setCascadesByRegion] = useState<Record<string, CascadeResult>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(nowIso());
@@ -85,6 +85,9 @@ export const useStratawatch = (dataMode: DataMode = "live") => {
 
     regionsRef.current = nextRegions;
     setRegions(nextRegions);
+    const highestRiskRegionId =
+      [...nextRegions].sort((left, right) => right.risk - left.risk)[0]?.id ?? null;
+    setSelectedRegionId((previous) => previous ?? highestRiskRegionId);
 
     const signalEvents = incomingSignals.map((signal) => {
       const regionName = REGION_LOOKUP.get(signal.regionId)?.name ?? "Unknown region";
