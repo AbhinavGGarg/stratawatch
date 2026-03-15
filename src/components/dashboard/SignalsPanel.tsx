@@ -14,6 +14,7 @@ const sourceLabel: Record<Signal["source"], string> = {
   usgs: "USGS",
   eonet: "NASA EONET",
   open_meteo: "Open-Meteo",
+  google_news: "Live News",
 };
 
 const sourceTone: Record<Signal["source"], string> = {
@@ -21,6 +22,7 @@ const sourceTone: Record<Signal["source"], string> = {
   usgs: "text-red-200 border-red-500/40 bg-red-500/10",
   eonet: "text-orange-200 border-orange-500/40 bg-orange-500/10",
   open_meteo: "text-cyan-200 border-cyan-500/40 bg-cyan-500/10",
+  google_news: "text-amber-200 border-amber-500/40 bg-amber-500/10",
 };
 
 const formatTimeAgo = (isoTimestamp: string): string => {
@@ -41,7 +43,7 @@ export function SignalsPanel({ signals, regions, formatSignalType }: SignalsPane
       acc[signal.source] += 1;
       return acc;
     },
-    { simulated: 0, usgs: 0, eonet: 0, open_meteo: 0 },
+    { simulated: 0, usgs: 0, eonet: 0, open_meteo: 0, google_news: 0 },
   );
 
   const topRiskRegions = [...regions].sort((a, b) => b.risk - a.risk).slice(0, 5);
@@ -68,6 +70,7 @@ export function SignalsPanel({ signals, regions, formatSignalType }: SignalsPane
             <p>USGS: {bySource.usgs}</p>
             <p>NASA EONET: {bySource.eonet}</p>
             <p>Open-Meteo: {bySource.open_meteo}</p>
+            <p>Live News: {bySource.google_news}</p>
             <p>Simulated: {bySource.simulated}</p>
           </div>
         </div>

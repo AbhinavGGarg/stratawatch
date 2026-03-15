@@ -4,7 +4,7 @@ export type SignalType =
   | "news_sentiment_spike"
   | "infrastructure_disruption";
 
-export type SignalSource = "simulated" | "usgs" | "eonet" | "open_meteo";
+export type SignalSource = "simulated" | "usgs" | "eonet" | "open_meteo" | "google_news";
 
 export type RiskBand = "low" | "medium" | "high" | "critical";
 

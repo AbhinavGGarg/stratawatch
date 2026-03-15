@@ -4,7 +4,7 @@ import type { RegionState, RiskBand, Signal, SignalType } from "@/lib/types";
 const signalTypeWeight: Record<SignalType, number> = {
   shipping_congestion: 0.82,
   extreme_weather: 0.78,
-  news_sentiment_spike: 0.64,
+  news_sentiment_spike: 0.8,
   infrastructure_disruption: 0.9,
 };
 
@@ -49,8 +49,8 @@ const topDrivers = (signals: Signal[]): SignalType[] => {
 };
 
 const recentSignalDensity = (signals: Signal[], now: Date): number => {
-  const horizonMs = 1000 * 60 * 60 * 6;
-  const decayWindowMs = 1000 * 60 * 90;
+  const horizonMs = 1000 * 60 * 60 * 24;
+  const decayWindowMs = 1000 * 60 * 60 * 3;
 
   const weightedCount = signals.reduce((sum, signal) => {
     const ageMs = now.getTime() - new Date(signal.timestamp).getTime();

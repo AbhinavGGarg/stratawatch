@@ -63,6 +63,7 @@ const sourceConfidence: Record<Signal["source"], number> = {
   usgs: 0.92,
   eonet: 0.84,
   open_meteo: 0.8,
+  google_news: 0.76,
 };
 
 const typeSectors: Record<Signal["type"], string[]> = {

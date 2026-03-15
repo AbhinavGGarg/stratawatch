@@ -212,7 +212,11 @@ export function OperationsWorkbench({ dataMode = "live" }: OperationsWorkbenchPr
                       key={site.id}
                       type="button"
                       onClick={() => setSite(site.id)}
-                      className="rounded-xl border border-white/10 bg-black/25 p-3 text-left text-xs text-zinc-300 transition hover:bg-white/10"
+                      className={`rounded-xl border p-3 text-left text-xs transition ${
+                        selectedSite?.id === site.id
+                          ? "border-cyan-400/40 bg-cyan-500/12 text-cyan-100"
+                          : "border-white/10 bg-black/25 text-zinc-300 hover:bg-white/10"
+                      }`}
                     >
                       <p className="mb-1 inline-flex items-center gap-1.5 text-zinc-100">
                         <Building2 className="h-3.5 w-3.5 text-cyan-300" />

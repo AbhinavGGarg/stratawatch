@@ -1,4 +1,4 @@
-import { findNearestRegion } from "@/lib/region-catalog";
+import { findNearestRegion, REGION_LOOKUP } from "@/lib/region-catalog";
 import type { Signal, SignalType } from "@/lib/types";
 
 const clamp = (value: number, min = 0, max = 1): number => Math.max(min, Math.min(max, value));
@@ -29,6 +29,44 @@ const toIso = (value: unknown): string => {
   }
 
   return new Date().toISOString();
+};
+
+const decodeXmlEntities = (value: string): string =>
+  value
+    .replaceAll("&amp;", "&")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&#39;", "'");
+
+const stripCdata = (value: string): string => value.replaceAll("<![CDATA[", "").replaceAll("]]>", "");
+
+interface ParsedRssItem {
+  title: string;
+  link: string;
+  pubDate: string;
+  source: string;
+}
+
+const readTag = (input: string, tag: string): string => {
+  const match = input.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`, "i"));
+  return match?.[1] ? decodeXmlEntities(stripCdata(match[1].trim())) : "";
+};
+
+const parseRssItems = (xmlPayload: string): ParsedRssItem[] => {
+  const itemMatches = [...xmlPayload.matchAll(/<item>([\s\S]*?)<\/item>/gi)];
+
+  return itemMatches
+    .map((match) => {
+      const block = match[1] ?? "";
+      return {
+        title: readTag(block, "title"),
+        link: readTag(block, "link"),
+        pubDate: readTag(block, "pubDate"),
+        source: readTag(block, "source") || "Google News",
+      };
+    })
+    .filter((item) => item.title.length > 0 && item.link.length > 0);
 };
 
 const mapEonetCategoryToType = (category: string): SignalType => {
@@ -237,14 +275,125 @@ export const fetchOpenMeteoSignals = async (): Promise<Signal[]> => {
   });
 };
 
+const conflictFeeds = [
+  "https://news.google.com/rss/search?q=Iran+OR+Israel+OR+Gaza+OR+Lebanon+missile+OR+strike+when:1d&hl=en-US&gl=US&ceid=US:en",
+  "https://news.google.com/rss/search?q=Ukraine+OR+Russia+drone+attack+OR+shelling+when:1d&hl=en-US&gl=US&ceid=US:en",
+  "https://news.google.com/rss/search?q=Yemen+OR+Red+Sea+Houthi+attack+when:1d&hl=en-US&gl=US&ceid=US:en",
+  "https://news.google.com/rss/search?q=Sudan+conflict+OR+clashes+when:1d&hl=en-US&gl=US&ceid=US:en",
+];
+
+const conflictRegionHints: Array<{ regionId: string; pattern: RegExp }> = [
+  { regionId: "persian_gulf", pattern: /\biran\b|\btehran\b|\bhormuz\b/i },
+  { regionId: "east_med", pattern: /\bisrael\b|\bgaza\b|\blebanon\b|\bsyria\b|\bwest bank\b/i },
+  { regionId: "black_sea", pattern: /\bukraine\b|\brussia\b|\bcrimea\b|\bblack sea\b/i },
+  { regionId: "gulf_aden", pattern: /\byemen\b|\bred sea\b|\bhouthi\b|\baden\b/i },
+  { regionId: "east_africa", pattern: /\bsudan\b|\bkhartoum\b|\bdarfur\b/i },
+];
+
+const lowRelevancePattern =
+  /\bfootball\b|\bsoccer\b|\bbasketball\b|\bnba\b|\bnfl\b|\bcricket\b|\bmatch\b|\bcup\b/i;
+
+const inferConflictRegion = (title: string): string => {
+  for (const hint of conflictRegionHints) {
+    if (hint.pattern.test(title)) {
+      return hint.regionId;
+    }
+  }
+
+  // Global spillover default for unmatched conflict headlines.
+  return "east_med";
+};
+
+const conflictSeverity = (headline: string): number => {
+  const text = headline.toLowerCase();
+  const high = /\bmissile\b|\bairstrike\b|\bbombardment\b|\binvasion\b|\bmass casualty\b/.test(text);
+  const elevated = /\battack\b|\bdrone\b|\bclash\b|\bshelling\b|\bwar\b|\bconflict\b/.test(text);
+
+  if (high) return 0.88;
+  if (elevated) return 0.76;
+  return 0.66;
+};
+
+const jitterAround = (location: [number, number], range = 1.8): [number, number] => {
+  const lng = clamp(location[0] + (Math.random() * 2 - 1) * range, -179.8, 179.8);
+  const lat = clamp(location[1] + (Math.random() * 2 - 1) * (range * 0.65), -84, 84);
+  return [lng, lat];
+};
+
+const stableId = (input: string): string => {
+  let hash = 0;
+  for (let index = 0; index < input.length; index += 1) {
+    hash = (hash << 5) - hash + input.charCodeAt(index);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
+};
+
+export const fetchConflictSignals = async (): Promise<Signal[]> => {
+  const responses = await Promise.all(
+    conflictFeeds.map(async (url) => {
+      try {
+        const response = await fetch(url, { cache: "no-store" });
+        if (!response.ok) return "";
+        return await response.text();
+      } catch {
+        return "";
+      }
+    }),
+  );
+
+  const seenLinks = new Set<string>();
+  const signals: Signal[] = [];
+
+  for (const feedXml of responses) {
+    if (!feedXml) {
+      continue;
+    }
+
+    const items = parseRssItems(feedXml);
+    for (const item of items) {
+      if (signals.length >= 24) {
+        break;
+      }
+
+      if (seenLinks.has(item.link) || lowRelevancePattern.test(item.title)) {
+        continue;
+      }
+
+      seenLinks.add(item.link);
+      const regionId = inferConflictRegion(item.title);
+      const region = REGION_LOOKUP.get(regionId);
+      if (!region) {
+        continue;
+      }
+
+      const severity = conflictSeverity(item.title);
+
+      signals.push({
+        id: `news-${stableId(item.link)}`,
+        type: "news_sentiment_spike",
+        source: "google_news",
+        severity,
+        timestamp: toIso(item.pubDate || new Date().toISOString()),
+        location: jitterAround(region.center, 2.2),
+        regionId: region.id,
+        details: `${item.title} (${item.source})`,
+      });
+    }
+  }
+
+  return signals;
+};
+
 export const fetchLiveSignals = async (): Promise<Signal[]> => {
-  const [usgs, eonet, meteo] = await Promise.all([
+  const [usgs, eonet, meteo, conflict] = await Promise.all([
     fetchUsgsSignals(),
     fetchEonetSignals(),
     fetchOpenMeteoSignals(),
+    fetchConflictSignals(),
   ]);
 
-  return [...usgs, ...eonet, ...meteo]
+  return [...usgs, ...eonet, ...meteo, ...conflict]
     .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime())
-    .slice(0, 40);
+    .slice(0, 60);
 };

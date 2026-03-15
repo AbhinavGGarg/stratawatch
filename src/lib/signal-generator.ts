@@ -109,6 +109,8 @@ export const signalToActivityText = (signal: Signal, regionName: string): string
         ? "LIVE Weather: "
         : signal.source === "usgs"
           ? "LIVE Seismic: "
+          : signal.source === "google_news"
+            ? "LIVE Conflict: "
           : "LIVE Event: ";
   const detailSuffix = signal.details ? ` (${signal.details})` : "";
   return `${sourcePrefix}${prefix} in ${regionName}${detailSuffix}`;

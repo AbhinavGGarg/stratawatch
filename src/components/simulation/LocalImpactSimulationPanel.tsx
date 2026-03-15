@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Bot, Building2, Play, ShieldAlert } from "lucide-react";
 import { SCENARIO_PRESETS } from "@/mock-data/site-seed";
 import { useCommandStore } from "@/store/command-store";
@@ -82,6 +82,10 @@ export function LocalImpactSimulationPanel() {
     }
   };
 
+  useEffect(() => {
+    setSimulation(null);
+  }, [activeScenario, selectedBuildingId, selectedSite?.id, setSimulation]);
+
   return (
     <section className="space-y-3 rounded-2xl border border-white/10 bg-zinc-900/72 p-4">
       <div className="flex items-start justify-between gap-3">
@@ -91,15 +95,21 @@ export function LocalImpactSimulationPanel() {
             Building-level emergency simulation integrated into StrataWatch.
             {selectedSite ? ` Active site: ${selectedSite.name}.` : " Select a region on map to auto-load a site."}
           </p>
+          {selectedBuilding ? (
+            <p className="mt-1 text-[11px] text-zinc-500">
+              Target: {selectedBuilding.name} · Scenario:{" "}
+              {SCENARIO_PRESETS.find((preset) => preset.type === activeScenario)?.label ?? activeScenario}
+            </p>
+          ) : null}
         </div>
         <button
           type="button"
           onClick={runSimulation}
-          disabled={!selectedBuilding || isRunning}
+          disabled={(!selectedBuilding && availableSites.length === 0) || isRunning}
           className="inline-flex items-center gap-1 rounded-lg border border-orange-400/40 bg-orange-500/15 px-3 py-1.5 text-xs font-medium text-orange-100 transition hover:bg-orange-500/25 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Play className="h-3.5 w-3.5" />
-          {isRunning ? "Simulating..." : "Run Simulation"}
+          {isRunning ? "Simulating..." : selectedBuilding ? "Run Simulation" : "Auto-select + Run"}
         </button>
       </div>
 
@@ -172,7 +182,12 @@ export function LocalImpactSimulationPanel() {
 
       {selectedBuilding && latestSimulation ? (
         <>
-          <BuildingScene building={selectedBuilding} zones={latestSimulation.zones} />
+          <BuildingScene
+            key={`${selectedBuilding.id}-${latestSimulation.scenario.type}-${latestSimulation.scenario.id}`}
+            building={selectedBuilding}
+            zones={latestSimulation.zones}
+            scenarioType={latestSimulation.scenario.type}
+          />
 
           <div className="grid gap-2 lg:grid-cols-2">
             <div className="rounded-xl border border-white/10 bg-black/25 p-3">

@@ -60,9 +60,11 @@ export const useCommandStore = create<CommandStoreState>((set, get) => ({
     set((state) => ({
       selectedSite: site,
       selectedBuildingId: site?.buildings[0]?.id ?? null,
+      latestSimulation: null,
       panel: {
         ...state.panel,
         activeScale: site ? "site" : state.panel.activeScale,
+        activeRegionId: site?.regionId ?? state.panel.activeRegionId,
         activeSiteId: site?.id ?? null,
         activeBuildingId: site?.buildings[0]?.id ?? null,
       },
@@ -71,6 +73,7 @@ export const useCommandStore = create<CommandStoreState>((set, get) => ({
   setBuilding: (buildingId) =>
     set((state) => ({
       selectedBuildingId: buildingId,
+      latestSimulation: null,
       panel: {
         ...state.panel,
         activeScale: buildingId ? "building" : state.panel.activeScale,

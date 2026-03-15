@@ -25,6 +25,13 @@ const getCachedLiveSignals = async (): Promise<Signal[]> => {
   return liveSignals;
 };
 
+const scoreLiveSignal = (signal: Signal): number => {
+  const ageHours = Math.max(0, (Date.now() - new Date(signal.timestamp).getTime()) / (1000 * 60 * 60));
+  const recency = Math.exp(-ageHours / 18);
+  const conflictBoost = signal.source === "google_news" ? 0.12 : 0;
+  return signal.severity * 0.7 + recency * 0.3 + conflictBoost;
+};
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const countParam = Number(searchParams.get("count") ?? "6");
@@ -39,7 +46,9 @@ export async function GET(request: Request) {
     new Date(),
   );
   const liveSignals = await getCachedLiveSignals();
-  const sampledLiveSignals = liveSignals.slice(0, Math.max(4, count + 2));
+  const sampledLiveSignals = [...liveSignals]
+    .sort((left, right) => scoreLiveSignal(right) - scoreLiveSignal(left))
+    .slice(0, Math.max(5, count + 3));
 
   const signals =
     mode === "live"

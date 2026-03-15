@@ -173,14 +173,28 @@ const makeSummary = (type: ScenarioType, severity: number): IncidentSummary => (
   dominantHazards:
     type === "flood_risk"
       ? ["rapid water ingress", "electrical exposure", "access degradation"]
+      : type === "earthquake_damage" || type === "structural_compromise"
+        ? ["structural shock", "stairwell instability", "debris obstruction"]
       : ["thermal spread", "smoke accumulation", "egress congestion"],
   structuralConcerns: [
-    "Localized load-bearing stress near central core.",
-    "Potential service-floor instability under prolonged hazard duration.",
+    type === "flood_risk"
+      ? "Ground-level utility rooms exposed to progressive water load."
+      : "Localized load-bearing stress near central core.",
+    type === "earthquake_damage" || type === "structural_compromise"
+      ? "Potential vertical crack propagation across upper service floors."
+      : "Potential service-floor instability under prolonged hazard duration.",
   ],
-  recommendedEntry: "North Entry",
-  recommendedEvacuation: "East Evacuation Corridor",
-  noGoAreas: ["Primary Hazard Core", "Mechanical Floor Sector"],
+  recommendedEntry: type === "flood_risk" ? "Service Entry" : "North Entry",
+  recommendedEvacuation:
+    type === "flood_risk"
+      ? "West Stairwell -> South Exit"
+      : type === "earthquake_damage" || type === "structural_compromise"
+        ? "West Stairwell -> East Exit"
+        : "East Evacuation Corridor",
+  noGoAreas:
+    type === "flood_risk"
+      ? ["Basement utility trench", "Primary Hazard Core"]
+      : ["Primary Hazard Core", "Mechanical Floor Sector"],
   tacticalNotes: [
     "Prioritize containment before full interior sweep.",
     "Protect east corridor to maintain evacuation viability.",
