@@ -107,9 +107,10 @@ function FloodEffect({ intensity }: { intensity: number }) {
   );
 }
 
-function FireSmokeEffect({ intensity, smoke }: { intensity: number; smoke?: boolean }) {
+function FireSmokeEffect({ intensity, smoke, embers }: { intensity: number; smoke?: boolean; embers?: boolean }) {
   const fireRef = useRef<Mesh | null>(null);
   const smokeRefs = useRef<Array<Mesh | null>>([]);
+  const emberRefs = useRef<Array<Mesh | null>>([]);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
@@ -127,11 +128,21 @@ function FireSmokeEffect({ intensity, smoke }: { intensity: number; smoke?: bool
       mesh.position.z = -0.8 + index * 0.4 + Math.cos(t * 1.3 + index) * 0.16;
       mesh.scale.setScalar(0.7 + ((t + index) % 3.2) * 0.2);
     });
+
+    emberRefs.current.forEach((mesh, index) => {
+      if (!mesh) return;
+      const cycle = (t * (1.8 + index * 0.1) + index) % 3.6;
+      mesh.position.y = 1.3 + cycle * 1.6;
+      mesh.position.x = -0.9 + index * 0.3 + Math.sin(t * 2.6 + index) * 0.15;
+      mesh.position.z = -0.6 + index * 0.2 + Math.cos(t * 2.1 + index) * 0.12;
+      mesh.scale.setScalar(0.7 + Math.max(0, Math.sin(t * 6 + index)) * 0.6);
+    });
   });
 
   return (
     <group>
       <pointLight position={[0, 4.2, 0]} color="#f97316" intensity={2.2 + intensity * 1.5} distance={26} />
+      <pointLight position={[1.2, 2.8, -0.6]} color="#ef4444" intensity={1.2 + intensity * 1.1} distance={18} />
       <mesh ref={fireRef} position={[0, 1.8, 0]}>
         <sphereGeometry args={[1.1 + intensity * 0.8, 20, 20]} />
         <meshStandardMaterial color="#ef4444" emissive="#f97316" emissiveIntensity={1.4} transparent opacity={0.72} />
@@ -148,6 +159,21 @@ function FireSmokeEffect({ intensity, smoke }: { intensity: number; smoke?: bool
             >
               <sphereGeometry args={[0.7, 18, 18]} />
               <meshStandardMaterial color="#6b7280" transparent opacity={0.25} />
+            </mesh>
+          ))
+        : null}
+
+      {embers
+        ? Array.from({ length: 8 }).map((_, index) => (
+            <mesh
+              key={`ember-${index}`}
+              ref={(node) => {
+                emberRefs.current[index] = node;
+              }}
+              position={[0, 1.3, 0]}
+            >
+              <sphereGeometry args={[0.08 + (index % 3) * 0.02, 10, 10]} />
+              <meshStandardMaterial color="#fb923c" emissive="#f97316" emissiveIntensity={1.2} transparent opacity={0.4} />
             </mesh>
           ))
         : null}
@@ -187,7 +213,7 @@ function ScenarioEffects({ scenarioType, zones }: { scenarioType: ScenarioType; 
   }
 
   if (scenarioType === "fire") {
-    return <FireSmokeEffect intensity={intensity} smoke={false} />;
+    return <FireSmokeEffect intensity={Math.min(0.95, intensity + 0.14)} smoke embers />;
   }
 
   if (scenarioType === "smoke_spread") {

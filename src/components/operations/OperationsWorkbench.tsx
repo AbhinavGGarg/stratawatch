@@ -58,7 +58,7 @@ export function OperationsWorkbench({ dataMode = "live" }: OperationsWorkbenchPr
       return;
     }
 
-    if (!selectedSite || selectedSite.regionId !== selectedRegionId) {
+    if (!selectedSite) {
       setSite(filteredSites[0]?.id ?? null);
       setScale("site");
     }

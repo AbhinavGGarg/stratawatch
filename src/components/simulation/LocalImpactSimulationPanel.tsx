@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Bot, Building2, Play, ShieldAlert } from "lucide-react";
+import { AlertTriangle, Bot, Building2, Play, ShieldAlert, Zap } from "lucide-react";
 import { SCENARIO_PRESETS } from "@/mock-data/site-seed";
 import { useCommandStore } from "@/store/command-store";
 import type { BuildingSimulationResult, ScenarioType } from "@/types/command-types";
@@ -12,8 +12,13 @@ const BuildingScene = dynamic(
   { ssr: false },
 );
 
+interface BatchSimulationResult {
+  buildingId: string;
+  buildingName: string;
+  result: BuildingSimulationResult;
+}
+
 export function LocalImpactSimulationPanel() {
-  const activeRegionId = useCommandStore((state) => state.panel.activeRegionId);
   const sites = useCommandStore((state) => state.sites);
   const selectedSite = useCommandStore((state) => state.selectedSite);
   const selectedBuildingId = useCommandStore((state) => state.selectedBuildingId);
@@ -25,34 +30,57 @@ export function LocalImpactSimulationPanel() {
 
   const [isRunning, setIsRunning] = useState(false);
   const [activeScenario, setActiveScenario] = useState<ScenarioType>("fire");
+  const [batchResults, setBatchResults] = useState<BatchSimulationResult[]>([]);
 
   const selectedBuilding = useMemo(
     () => selectedSite?.buildings.find((building) => building.id === selectedBuildingId) ?? null,
     [selectedSite, selectedBuildingId],
   );
-  const availableSites = useMemo(
-    () => sites.filter((site) => site.regionId === activeRegionId),
-    [activeRegionId, sites],
-  );
 
-  const runSimulation = async () => {
-    let buildingForRun = selectedBuilding;
+  const runForBuilding = async (buildingId: string): Promise<BuildingSimulationResult> => {
+    const response = await fetch("/api/building/simulate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        buildingId,
+        scenario: activeScenario,
+      }),
+    });
 
-    if (!buildingForRun && availableSites.length > 0) {
-      const fallbackSite = selectedSite ?? availableSites[0] ?? null;
-      const fallbackBuilding = fallbackSite?.buildings[0] ?? null;
-
-      if (fallbackSite && (!selectedSite || selectedSite.id !== fallbackSite.id)) {
-        setSite(fallbackSite.id);
-      }
-
-      if (fallbackBuilding) {
-        setBuilding(fallbackBuilding.id);
-        buildingForRun = fallbackBuilding;
-      }
+    if (!response.ok) {
+      throw new Error("Simulation request failed");
     }
 
-    if (!buildingForRun) {
+    const payload = (await response.json()) as { result: BuildingSimulationResult };
+    return payload.result;
+  };
+
+  const runSelectedSimulation = async () => {
+    const targetBuilding = selectedBuilding ?? selectedSite?.buildings[0] ?? null;
+    if (!targetBuilding) {
+      return;
+    }
+
+    if (!selectedBuilding || selectedBuilding.id !== targetBuilding.id) {
+      setBuilding(targetBuilding.id);
+    }
+
+    setIsRunning(true);
+    setScenario(activeScenario);
+
+    try {
+      const result = await runForBuilding(targetBuilding.id);
+      setBatchResults([]);
+      setSimulation(result);
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const runSiteBatchSimulation = async () => {
+    if (!selectedSite || selectedSite.buildings.length === 0) {
       return;
     }
 
@@ -60,23 +88,22 @@ export function LocalImpactSimulationPanel() {
     setScenario(activeScenario);
 
     try {
-      const response = await fetch("/api/building/simulate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          buildingId: buildingForRun.id,
-          scenario: activeScenario,
-        }),
-      });
+      const results = await Promise.all(
+        selectedSite.buildings.map(async (building) => ({
+          buildingId: building.id,
+          buildingName: building.name,
+          result: await runForBuilding(building.id),
+        })),
+      );
 
-      if (!response.ok) {
-        throw new Error("Simulation request failed");
+      setBatchResults(results);
+
+      const activeResult =
+        results.find((item) => item.buildingId === (selectedBuilding?.id ?? "")) ?? results[0] ?? null;
+      if (activeResult) {
+        setBuilding(activeResult.buildingId);
+        setSimulation(activeResult.result);
       }
-
-      const payload = (await response.json()) as { result: BuildingSimulationResult };
-      setSimulation(payload.result);
     } finally {
       setIsRunning(false);
     }
@@ -84,6 +111,7 @@ export function LocalImpactSimulationPanel() {
 
   useEffect(() => {
     setSimulation(null);
+    setBatchResults([]);
   }, [activeScenario, selectedBuildingId, selectedSite?.id, setSimulation]);
 
   return (
@@ -93,29 +121,60 @@ export function LocalImpactSimulationPanel() {
           <h3 className="text-sm font-semibold text-zinc-100">Local Impact Simulation</h3>
           <p className="text-xs text-zinc-400">
             Building-level emergency simulation integrated into StrataWatch.
-            {selectedSite ? ` Active site: ${selectedSite.name}.` : " Select a region on map to auto-load a site."}
+            {selectedSite ? ` Active site: ${selectedSite.name}.` : " Choose a site to begin."}
           </p>
           {selectedBuilding ? (
             <p className="mt-1 text-[11px] text-zinc-500">
-              Target: {selectedBuilding.name} · Scenario:{" "}
+              Target: {selectedBuilding.name} · Scenario: {" "}
               {SCENARIO_PRESETS.find((preset) => preset.type === activeScenario)?.label ?? activeScenario}
             </p>
           ) : null}
         </div>
-        <button
-          type="button"
-          onClick={runSimulation}
-          disabled={(!selectedBuilding && availableSites.length === 0) || isRunning}
-          className="inline-flex items-center gap-1 rounded-lg border border-orange-400/40 bg-orange-500/15 px-3 py-1.5 text-xs font-medium text-orange-100 transition hover:bg-orange-500/25 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Play className="h-3.5 w-3.5" />
-          {isRunning ? "Simulating..." : selectedBuilding ? "Run Simulation" : "Auto-select + Run"}
-        </button>
+
+        <div className="flex flex-col gap-1.5">
+          <button
+            type="button"
+            onClick={runSelectedSimulation}
+            disabled={isRunning || (!selectedBuilding && !selectedSite?.buildings[0])}
+            className="inline-flex items-center gap-1 rounded-lg border border-orange-400/40 bg-orange-500/15 px-3 py-1.5 text-xs font-medium text-orange-100 transition hover:bg-orange-500/25 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Play className="h-3.5 w-3.5" />
+            {isRunning ? "Simulating..." : "Run Selected"}
+          </button>
+
+          <button
+            type="button"
+            onClick={runSiteBatchSimulation}
+            disabled={isRunning || !selectedSite || selectedSite.buildings.length === 0}
+            className="inline-flex items-center gap-1 rounded-lg border border-cyan-400/35 bg-cyan-500/14 px-3 py-1.5 text-xs font-medium text-cyan-100 transition hover:bg-cyan-500/22 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Zap className="h-3.5 w-3.5" />
+            Run All In Site
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-2 md:grid-cols-2">
         <div className="rounded-xl border border-white/10 bg-black/25 p-3">
           <p className="mb-2 text-[11px] uppercase tracking-wide text-zinc-500">Site / Building</p>
+
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            {sites.map((site) => (
+              <button
+                key={site.id}
+                type="button"
+                onClick={() => setSite(site.id)}
+                className={`rounded-md border px-2 py-1 text-[11px] transition ${
+                  selectedSite?.id === site.id
+                    ? "border-cyan-400/45 bg-cyan-500/16 text-cyan-100"
+                    : "border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10"
+                }`}
+              >
+                {site.city}
+              </button>
+            ))}
+          </div>
+
           {selectedSite ? (
             <>
               <p className="text-sm text-zinc-100">{selectedSite.name}</p>
@@ -141,20 +200,7 @@ export function LocalImpactSimulationPanel() {
               </div>
             </>
           ) : (
-            <div className="space-y-2">
-              <p className="text-xs text-zinc-500">No active site selected yet.</p>
-              {availableSites.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => setSite(availableSites[0]?.id ?? null)}
-                  className="rounded-lg border border-cyan-400/35 bg-cyan-500/15 px-2 py-1.5 text-xs text-cyan-100"
-                >
-                  Use {availableSites[0]?.name}
-                </button>
-              ) : (
-                <p className="text-xs text-zinc-600">Select a mapped region on the map to load simulation sites.</p>
-              )}
-            </div>
+            <p className="text-xs text-zinc-500">Select a site cluster to target a building simulation.</p>
           )}
         </div>
 
@@ -177,6 +223,28 @@ export function LocalImpactSimulationPanel() {
               </button>
             ))}
           </div>
+
+          {batchResults.length > 0 ? (
+            <div className="mt-3 rounded-lg border border-cyan-400/30 bg-cyan-500/10 p-2">
+              <p className="mb-1 text-[11px] uppercase tracking-wide text-cyan-200">Batch Results</p>
+              <div className="space-y-1">
+                {batchResults.map((item) => (
+                  <button
+                    key={item.buildingId}
+                    type="button"
+                    onClick={() => {
+                      setBuilding(item.buildingId);
+                      setSimulation(item.result);
+                    }}
+                    className="flex w-full items-center justify-between rounded-md border border-white/10 bg-black/20 px-2 py-1 text-[11px] text-cyan-100 hover:bg-white/10"
+                  >
+                    <span>{item.buildingName}</span>
+                    <span>{Math.round(item.result.summary.severity * 100)}%</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -224,7 +292,7 @@ export function LocalImpactSimulationPanel() {
         <div className="rounded-xl border border-dashed border-white/15 bg-black/20 p-4 text-xs text-zinc-500">
           <p className="inline-flex items-center gap-1.5">
             <AlertTriangle className="h-3.5 w-3.5 text-amber-300" />
-            Run a scenario to generate 3D hazard overlays and incident recommendations.
+            Select a site and building, then run a scenario to generate 3D hazard overlays and incident recommendations.
           </p>
         </div>
       )}
