@@ -60,6 +60,12 @@ interface MapLibrary {
     projection: "mercator";
     attributionControl: boolean;
     dragRotate: boolean;
+    dragPan?: boolean;
+    scrollZoom?: boolean;
+    doubleClickZoom?: boolean;
+    touchZoomRotate?: boolean;
+    minZoom?: number;
+    maxZoom?: number;
     renderWorldCopies?: boolean;
   }) => MapLike;
   NavigationControl: new (options: { showCompass: boolean }) => unknown;
@@ -193,7 +199,13 @@ export function MapPanel({ regions, selectedRegionId, onSelectRegion, isLoading 
         projection: "mercator",
         attributionControl: false,
         dragRotate: false,
-        renderWorldCopies: false,
+        dragPan: true,
+        scrollZoom: true,
+        doubleClickZoom: true,
+        touchZoomRotate: true,
+        minZoom: 1,
+        maxZoom: 8,
+        renderWorldCopies: true,
       });
 
       map.addControl(new runtime.library.NavigationControl({ showCompass: false }), "bottom-right");
@@ -339,8 +351,8 @@ export function MapPanel({ regions, selectedRegionId, onSelectRegion, isLoading 
     <section className="relative h-full min-h-0 overflow-hidden rounded-3xl border border-white/10 bg-zinc-900/70 shadow-2xl shadow-black/30">
       <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between border-b border-white/10 bg-black/30 px-4 py-3 backdrop-blur">
         <div>
-          <h2 className="text-sm font-semibold text-zinc-100">Global Risk Map</h2>
-          <p className="text-xs text-zinc-400">Hex grid anomaly intelligence layer</p>
+          <h2 className="text-sm font-semibold text-zinc-100">Conflict Early-Warning Heatmap</h2>
+          <p className="text-xs text-zinc-400">Live regional threat pressure for civilian awareness</p>
         </div>
         <div className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/40 px-2 py-1 text-[11px] text-zinc-300">
           <Info className="h-3 w-3" />
@@ -353,7 +365,7 @@ export function MapPanel({ regions, selectedRegionId, onSelectRegion, isLoading 
       {(isLoading || !mapReady) && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/35 backdrop-blur-sm">
           <div className="rounded-xl border border-white/15 bg-zinc-900/80 px-4 py-2 text-sm text-zinc-200">
-            Loading intelligence layers...
+            Loading conflict layers...
           </div>
         </div>
       )}

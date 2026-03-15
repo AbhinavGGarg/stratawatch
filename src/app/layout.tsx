@@ -19,7 +19,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "StrataWatch",
   description:
-    "StrataWatch detects simulated global disruption signals and visualizes cascading risk across connected systems.",
+    "StrataWatch is a real-time conflict heatmap and civilian early-warning platform for monitoring regional safety risk.",
 };
 
 export default function RootLayout({

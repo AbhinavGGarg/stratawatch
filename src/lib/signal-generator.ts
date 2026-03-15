@@ -78,24 +78,24 @@ export const generateSignalBurst = (
 
 const signalEventTemplates: Record<SignalType, string[]> = {
   shipping_congestion: [
-    "Shipping congestion increased",
-    "Maritime queue length rose",
-    "Port throughput degraded",
+    "Transit bottleneck pressure increased",
+    "Movement corridor delays rose",
+    "Cross-border logistics slowed",
   ],
   extreme_weather: [
-    "Weather anomaly detected",
-    "Storm intensity elevated",
-    "Severe weather watch expanded",
+    "Severe weather risk expanded",
+    "Storm pressure increased near civilian routes",
+    "Weather hazard corridor widened",
   ],
   news_sentiment_spike: [
-    "Negative news sentiment accelerated",
-    "Media volatility spike detected",
-    "Public sentiment turned sharply negative",
+    "Conflict sentiment spike detected",
+    "Information volatility accelerated",
+    "Tension indicators turned sharply negative",
   ],
   infrastructure_disruption: [
-    "Infrastructure outage reported",
-    "Critical facility disruption detected",
-    "Network reliability dropped",
+    "Critical services disruption reported",
+    "Infrastructure reliability dropped",
+    "Essential network outage detected",
   ],
 };
 

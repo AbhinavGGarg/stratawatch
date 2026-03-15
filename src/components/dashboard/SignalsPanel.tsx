@@ -50,8 +50,8 @@ export function SignalsPanel({ signals, regions, formatSignalType }: SignalsPane
     <section className="h-full min-h-0 overflow-y-auto rounded-3xl border border-white/10 bg-zinc-900/70 p-4 shadow-2xl shadow-black/30">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-sm font-semibold text-zinc-100">Signals Intelligence</h2>
-          <p className="text-xs text-zinc-400">Live + simulated anomaly stream with source provenance</p>
+          <h2 className="text-sm font-semibold text-zinc-100">Live Civilian Alerts</h2>
+          <p className="text-xs text-zinc-400">Real-time conflict pressure indicators and disruption alerts</p>
         </div>
         <span className="rounded-lg border border-white/10 bg-black/35 px-2 py-1 text-xs text-zinc-300">
           {sortedSignals.length} recent signals
@@ -62,7 +62,7 @@ export function SignalsPanel({ signals, regions, formatSignalType }: SignalsPane
         <div className="rounded-xl border border-white/10 bg-black/30 p-3">
           <p className="mb-2 inline-flex items-center gap-1 text-xs text-zinc-400">
             <Radar className="h-3.5 w-3.5" />
-            Sources
+            Signal Sources
           </p>
           <div className="space-y-1.5 text-xs text-zinc-300">
             <p>USGS: {bySource.usgs}</p>
@@ -90,7 +90,7 @@ export function SignalsPanel({ signals, regions, formatSignalType }: SignalsPane
       <div className="rounded-xl border border-white/10 bg-black/25">
         <div className="grid grid-cols-[1.2fr_1fr_0.8fr_0.7fr] border-b border-white/10 px-3 py-2 text-[11px] uppercase tracking-wide text-zinc-500">
           <span>Region</span>
-          <span>Signal Type</span>
+          <span>Threat Type</span>
           <span>Source</span>
           <span>Severity</span>
         </div>

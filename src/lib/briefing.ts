@@ -12,7 +12,7 @@ const riskDescriptor = (risk: number): string => {
 
 export const generateBriefingText = (region: RegionState | null): string => {
   if (!region) {
-    return "Select a region to view an intelligence briefing and simulate disruption scenarios.";
+    return "Select a region to view a localized early-warning safety brief.";
   }
 
   const drivers =
@@ -22,5 +22,5 @@ export const generateBriefingText = (region: RegionState | null): string => {
 
   const neighborPressure = Math.round(region.risk * 0.7 * 100);
 
-  return `Regional risk is ${riskDescriptor(region.risk)} (${toPercent(region.risk)}) due to ${drivers}. Neighboring zones show ${neighborPressure}% propagation pressure, indicating potential spillover into connected logistics, power, and mobility systems.`;
+  return `Regional civilian risk is ${riskDescriptor(region.risk)} (${toPercent(region.risk)}) driven by ${drivers}. Neighboring zones show ${neighborPressure}% spillover pressure, suggesting possible disruption to movement, essential services, and local safety conditions.`;
 };

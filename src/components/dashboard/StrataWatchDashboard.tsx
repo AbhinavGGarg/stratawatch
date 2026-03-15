@@ -2,14 +2,13 @@
 
 import { motion } from "framer-motion";
 import { BriefingPanel } from "@/components/dashboard/BriefingPanel";
-import { CascadeFocusPanel } from "@/components/dashboard/CascadeFocusPanel";
 import { MapPanel } from "@/components/dashboard/MapPanel";
 import { SignalsPanel } from "@/components/dashboard/SignalsPanel";
 import type { DataMode } from "@/hooks/use-stratawatch";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { useStratawatch } from "@/hooks/use-stratawatch";
 
-export type DashboardView = "overview" | "signals" | "risk-map" | "cascade-simulator";
+export type DashboardView = "overview" | "signals" | "risk-map";
 
 interface StrataWatchDashboardProps {
   view: DashboardView;
@@ -27,27 +26,22 @@ export function StrataWatchDashboard({ view, dataMode = "live" }: StrataWatchDas
     stats,
     isLoading,
     activityFeed,
-    triggerDisruption,
-    cascadeResult,
     lastUpdated,
-    networkTemplate,
     formatSignalType,
   } = useStratawatch(dataMode);
 
   const renderCenterPanel = () => {
     if (view === "signals") {
-      return <SignalsPanel signals={signals} regions={regions} formatSignalType={formatSignalType} />;
-    }
-
-    if (view === "cascade-simulator") {
       return (
-        <CascadeFocusPanel
-          selectedRegion={selectedRegion}
-          cascadeResult={cascadeResult}
-          onSimulate={triggerDisruption}
-          nodes={networkTemplate.nodes}
-          links={networkTemplate.links}
-        />
+        <div className="grid h-full min-h-0 grid-cols-1 gap-3 2xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
+          <MapPanel
+            regions={regions}
+            selectedRegionId={selectedRegionId}
+            onSelectRegion={setSelectedRegionId}
+            isLoading={isLoading}
+          />
+          <SignalsPanel signals={signals} regions={regions} formatSignalType={formatSignalType} />
+        </div>
       );
     }
 
@@ -61,8 +55,8 @@ export function StrataWatchDashboard({ view, dataMode = "live" }: StrataWatchDas
     );
   };
 
-  const isOverviewStyleView = view === "overview" || view === "risk-map";
-  const gridColumnsClass = isOverviewStyleView
+  const usesBriefingPanel = view === "overview" || view === "risk-map";
+  const gridColumnsClass = usesBriefingPanel
     ? "xl:grid-cols-[310px_minmax(0,1fr)_400px]"
     : "xl:grid-cols-[310px_minmax(0,1fr)]";
 
@@ -84,15 +78,11 @@ export function StrataWatchDashboard({ view, dataMode = "live" }: StrataWatchDas
           {renderCenterPanel()}
         </motion.div>
 
-        {isOverviewStyleView && (
+        {usesBriefingPanel && (
           <motion.div initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, delay: 0.1 }}>
             <BriefingPanel
               selectedRegion={selectedRegion}
               signals={selectedRegionSignals}
-              onSimulate={triggerDisruption}
-              cascadeResult={cascadeResult}
-              nodes={networkTemplate.nodes}
-              links={networkTemplate.links}
               formatSignalType={formatSignalType}
             />
           </motion.div>

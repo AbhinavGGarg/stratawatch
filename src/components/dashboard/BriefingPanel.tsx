@@ -1,19 +1,14 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Bolt, Brain, Clock3, ShieldAlert, Sparkles, Waypoints } from "lucide-react";
+import { AlertTriangle, Brain, Clock3, ShieldAlert } from "lucide-react";
 import { generateBriefingText } from "@/lib/briefing";
-import type { CascadeResult, RegionState, Signal, SystemLink, SystemNode } from "@/lib/types";
-import { CascadeNetwork } from "@/components/dashboard/CascadeNetwork";
+import type { RegionState, Signal } from "@/lib/types";
 import { RiskTrendChart } from "@/components/dashboard/RiskTrendChart";
 
 interface BriefingPanelProps {
   selectedRegion: RegionState | null;
   signals: Signal[];
-  onSimulate: () => void;
-  cascadeResult: CascadeResult | null;
-  nodes: SystemNode[];
-  links: SystemLink[];
   formatSignalType: (type: Signal["type"]) => string;
 }
 
@@ -38,31 +33,57 @@ const formatTimeAgo = (isoTimestamp: string): string => {
   return `${deltaHours}h ago`;
 };
 
+const riskLabel = (risk: number): string => {
+  if (risk >= 0.8) return "Critical";
+  if (risk >= 0.62) return "High";
+  if (risk >= 0.36) return "Watch";
+  return "Low";
+};
+
+const recommendedActions = (region: RegionState, drivers: string[]): string[] => {
+  if (region.risk >= 0.8) {
+    return [
+      "Avoid non-essential movement in this zone and delay travel through nearby transit nodes.",
+      "Keep one trusted local source open for rapid updates and verify route status before departure.",
+      "Prepare a 24-hour contingency plan for shelter, transport, and communications.",
+    ];
+  }
+
+  if (region.risk >= 0.62) {
+    return [
+      "Use daylight travel windows where possible and avoid known chokepoints.",
+      "Monitor alerts for rapid escalation in the next 30-60 minutes.",
+      `Watch these drivers closely: ${drivers.slice(0, 2).join(", ") || "regional instability indicators"}.`,
+    ];
+  }
+
+  if (region.risk >= 0.36) {
+    return [
+      "Continue normal activity with caution and keep alternate routes available.",
+      "Track local advisories for sudden service disruption or movement restrictions.",
+      "Check in with contacts before moving across unfamiliar areas.",
+    ];
+  }
+
+  return [
+    "No immediate civilian safety action required.",
+    "Keep passive monitoring enabled for early warning changes.",
+    "Review route options before long-distance movement.",
+  ];
+};
+
 export function BriefingPanel({
   selectedRegion,
   signals,
-  onSimulate,
-  cascadeResult,
-  nodes,
-  links,
   formatSignalType,
 }: BriefingPanelProps) {
   return (
     <aside className="h-full min-h-0 overflow-y-auto rounded-3xl border border-white/10 bg-zinc-900/78 p-4 shadow-2xl shadow-black/30 backdrop-blur">
-      <div className="mb-4 flex items-start justify-between gap-3">
+      <div className="mb-4">
         <div>
-          <h2 className="text-sm font-semibold text-zinc-100">Intelligence Briefing</h2>
-          <p className="text-xs text-zinc-400">Regional disruption analysis</p>
+          <h2 className="text-sm font-semibold text-zinc-100">Civilian Safety Brief</h2>
+          <p className="text-xs text-zinc-400">What is changing, where risk is rising, and what to do next</p>
         </div>
-        <button
-          type="button"
-          onClick={onSimulate}
-          disabled={!selectedRegion}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-orange-400/50 bg-orange-500/15 px-3 py-1.5 text-xs font-medium text-orange-200 transition hover:bg-orange-500/25 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <Bolt className="h-3.5 w-3.5" />
-          Simulate Disruption
-        </button>
       </div>
 
       <AnimatePresence mode="wait">
@@ -76,7 +97,7 @@ export function BriefingPanel({
         >
           {!selectedRegion ? (
             <div className="rounded-xl border border-dashed border-white/15 bg-black/25 p-6 text-center text-sm text-zinc-400">
-              Select a hex region on the map to open an intelligence briefing.
+              Monitoring global conflict heatmap. Select a region to open a local safety brief.
             </div>
           ) : (
             <>
@@ -86,7 +107,10 @@ export function BriefingPanel({
                     <ShieldAlert className="h-4 w-4 text-amber-300" />
                     <p className="text-sm font-semibold text-zinc-100">{selectedRegion.name}</p>
                   </div>
-                  <span className="text-sm font-semibold text-zinc-50">{formatRisk(selectedRegion.risk)}</span>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-zinc-50">{formatRisk(selectedRegion.risk)}</p>
+                    <p className="text-[10px] uppercase tracking-wide text-zinc-400">{riskLabel(selectedRegion.risk)}</p>
+                  </div>
                 </div>
                 <div className="h-2 rounded-full bg-zinc-800">
                   <div
@@ -100,11 +124,11 @@ export function BriefingPanel({
               <section className="rounded-xl border border-white/10 bg-black/28 p-3">
                 <div className="mb-2 flex items-center gap-1.5">
                   <Brain className="h-4 w-4 text-zinc-200" />
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-300">Signal Drivers</h3>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-300">Key Drivers</h3>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {selectedRegion.drivers.length === 0 ? (
-                    <span className="text-xs text-zinc-500">No dominant drivers in current window</span>
+                    <span className="text-xs text-zinc-500">No dominant drivers in the current window</span>
                   ) : (
                     selectedRegion.drivers.map((driver) => (
                       <span
@@ -124,14 +148,14 @@ export function BriefingPanel({
               <section className="rounded-xl border border-white/10 bg-black/28 p-3">
                 <div className="mb-2 flex items-center gap-1.5">
                   <Clock3 className="h-4 w-4 text-zinc-200" />
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-300">Recent Events</h3>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-300">Recent Alerts</h3>
                 </div>
                 <div className="space-y-2">
                   {signals.length === 0 && selectedRegion.recentEvents.length === 0 ? (
                     <p className="text-xs text-zinc-500">No recent activity detected for this region.</p>
                   ) : (
                     <>
-                      {selectedRegion.recentEvents.map((event, index) => (
+                      {[...new Set(selectedRegion.recentEvents)].slice(0, 4).map((event, index) => (
                         <p key={`${event}-${index}`} className="text-xs text-zinc-300">
                           • {event}
                         </p>
@@ -149,35 +173,19 @@ export function BriefingPanel({
 
               <section className="rounded-xl border border-white/10 bg-black/28 p-3">
                 <div className="mb-2 flex items-center gap-1.5">
-                  <Waypoints className="h-4 w-4 text-zinc-200" />
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-300">Simulated Cascade Effects</h3>
+                  <AlertTriangle className="h-4 w-4 text-zinc-200" />
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-300">What Civilians Should Do Now</h3>
                 </div>
-                {cascadeResult ? (
-                  <>
-                    <p className="mb-3 text-xs leading-relaxed text-zinc-300">
-                      Trigger nodes: {cascadeResult.triggerNodes.join(", ")}. Watch the network evolve across minute 0, 5, 15,
-                      and 30 to evaluate cascading failure depth.
+                <div className="space-y-2">
+                  {recommendedActions(
+                    selectedRegion,
+                    selectedRegion.drivers.map((driver) => formatSignalType(driver).toLowerCase()),
+                  ).map((action) => (
+                    <p key={action} className="text-xs leading-relaxed text-zinc-300">
+                      • {action}
                     </p>
-                    <CascadeNetwork
-                      key={cascadeResult.startedAt}
-                      result={cascadeResult}
-                      nodes={nodes}
-                      links={links}
-                    />
-                  </>
-                ) : (
-                  <div className="rounded-lg border border-dashed border-white/15 bg-black/20 p-4 text-xs text-zinc-400">
-                    Run a disruption simulation to visualize dependency failures and timeline spread.
-                  </div>
-                )}
-              </section>
-
-              <section className="rounded-xl border border-white/10 bg-black/28 p-3">
-                <div className="mb-2 flex items-center gap-1.5">
-                  <Sparkles className="h-4 w-4 text-zinc-200" />
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-300">Assessment</h3>
+                  ))}
                 </div>
-                <p className="text-xs leading-relaxed text-zinc-300">{generateBriefingText(selectedRegion)}</p>
               </section>
             </>
           )}

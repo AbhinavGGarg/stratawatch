@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, BarChart3, FlaskConical, Globe2, Radar, TowerControl } from "lucide-react";
+import { Activity, BarChart3, FlaskConical, Globe2, Radar } from "lucide-react";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import type { ActivityEvent } from "@/lib/types";
 
@@ -18,9 +18,8 @@ interface SidebarProps {
 
 const navigationItems = [
   { icon: Globe2, label: "Overview", href: "/overview" },
-  { icon: Radar, label: "Signals", href: "/signals" },
-  { icon: BarChart3, label: "Risk Map", href: "/risk-map" },
-  { icon: TowerControl, label: "Command Center", href: "/command-center" },
+  { icon: BarChart3, label: "Live Heatmap", href: "/risk-map" },
+  { icon: Radar, label: "Live Alerts", href: "/signals" },
   { icon: FlaskConical, label: "Simulation Lab", href: "/simulation-lab" },
 ];
 
@@ -37,7 +36,7 @@ const statusCards = [
   },
   {
     key: "systemsMonitored",
-    label: "Systems Monitored",
+    label: "Zones Monitored",
     accent: "text-red-300",
   },
 ] as const;
@@ -54,8 +53,8 @@ export function Sidebar({ stats, activityFeed, lastUpdated }: SidebarProps) {
   const normalizedPath =
     pathname === "/"
       ? "/overview"
-      : pathname === "/operations" || pathname === "/cascade-simulator"
-        ? "/command-center"
+      : pathname === "/operations" || pathname === "/cascade-simulator" || pathname === "/command-center"
+        ? "/overview"
         : pathname;
 
   return (
@@ -67,7 +66,7 @@ export function Sidebar({ stats, activityFeed, lastUpdated }: SidebarProps) {
           </span>
           <div>
             <h1 className="text-lg font-semibold text-zinc-50">StrataWatch</h1>
-            <p className="text-xs text-zinc-400">Global Disruption Intelligence</p>
+            <p className="text-xs text-zinc-400">Civilian Early Warning Heatmap</p>
           </div>
         </div>
 

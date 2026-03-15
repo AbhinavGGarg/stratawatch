@@ -140,7 +140,7 @@ export const buildRiskEscalationEvents = (
     if (crossedCritical) {
       events.push({
         regionId: region.id,
-        message: `${region.name} escalated to critical disruption risk`,
+        message: `${region.name} escalated to critical civilian risk`,
         level: "critical",
       });
       continue;
@@ -149,7 +149,7 @@ export const buildRiskEscalationEvents = (
     if (crossedHigh) {
       events.push({
         regionId: region.id,
-        message: `${region.name} moved into high risk band`,
+        message: `${region.name} moved into elevated civilian risk`,
         level: "warning",
       });
     }

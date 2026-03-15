@@ -28,9 +28,7 @@ export function OperationsWorkbench({ dataMode = "live" }: OperationsWorkbenchPr
     isLoading,
     activityFeed,
     triggerDisruption,
-    cascadeResult,
     lastUpdated,
-    networkTemplate,
     formatSignalType,
   } = useStratawatch(dataMode);
 
@@ -243,10 +241,6 @@ export function OperationsWorkbench({ dataMode = "live" }: OperationsWorkbenchPr
             <BriefingPanel
               selectedRegion={selectedRegion}
               signals={selectedRegionSignals}
-              onSimulate={triggerDisruption}
-              cascadeResult={cascadeResult}
-              nodes={networkTemplate.nodes}
-              links={networkTemplate.links}
               formatSignalType={formatSignalType}
             />
           </div>

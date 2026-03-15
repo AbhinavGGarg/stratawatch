@@ -160,7 +160,7 @@ export const useStratawatch = (dataMode: DataMode = "live") => {
     return {
       activeSignals,
       highRiskZones,
-      systemsMonitored: getNetworkTemplate().nodes.length,
+      systemsMonitored: regions.length,
     };
   }, [regions, signals]);
 
