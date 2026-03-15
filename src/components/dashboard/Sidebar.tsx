@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, BarChart3, FlaskConical, Globe2, Radar } from "lucide-react";
+import { Activity, BarChart3, BrainCircuit, FlaskConical, Globe2, Radar } from "lucide-react";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import type { ActivityEvent } from "@/lib/types";
 
@@ -20,6 +20,7 @@ const navigationItems = [
   { icon: Globe2, label: "Overview", href: "/overview" },
   { icon: BarChart3, label: "Live Heatmap", href: "/risk-map" },
   { icon: Radar, label: "Live Alerts", href: "/signals" },
+  { icon: BrainCircuit, label: "AI Intelligence", href: "/ai-intelligence" },
   { icon: FlaskConical, label: "Simulation Lab", href: "/simulation-lab" },
 ];
 

@@ -10,6 +10,7 @@ interface MapPanelProps {
   selectedRegionId: string | null;
   onSelectRegion: (regionId: string) => void;
   isLoading: boolean;
+  hotspotRegionIds?: string[];
 }
 
 interface HoverDetails {
@@ -76,6 +77,7 @@ const SOURCE_ID = "risk-hex-source";
 const FILL_LAYER_ID = "risk-hex-fill";
 const OUTLINE_LAYER_ID = "risk-hex-outline";
 const HIGHLIGHT_LAYER_ID = "risk-hex-highlight";
+const HOTSPOT_LAYER_ID = "risk-hex-hotspots";
 
 const defaultStyle = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 
@@ -152,7 +154,13 @@ const loadMapLibrary = async (
   };
 };
 
-export function MapPanel({ regions, selectedRegionId, onSelectRegion, isLoading }: MapPanelProps) {
+export function MapPanel({
+  regions,
+  selectedRegionId,
+  onSelectRegion,
+  isLoading,
+  hotspotRegionIds = [],
+}: MapPanelProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLike | null>(null);
   const onSelectRegionRef = useRef(onSelectRegion);
@@ -163,6 +171,7 @@ export function MapPanel({ regions, selectedRegionId, onSelectRegion, isLoading 
   const geojson = useMemo(() => toGeoJson(regions), [regions]);
   const geojsonRef = useRef(geojson);
   const selectedRegionIdRef = useRef(selectedRegionId);
+  const hotspotRegionIdsRef = useRef(hotspotRegionIds);
 
   useEffect(() => {
     onSelectRegionRef.current = onSelectRegion;
@@ -175,6 +184,10 @@ export function MapPanel({ regions, selectedRegionId, onSelectRegion, isLoading 
   useEffect(() => {
     selectedRegionIdRef.current = selectedRegionId;
   }, [selectedRegionId]);
+
+  useEffect(() => {
+    hotspotRegionIdsRef.current = hotspotRegionIds;
+  }, [hotspotRegionIds]);
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) {
@@ -269,6 +282,20 @@ export function MapPanel({ regions, selectedRegionId, onSelectRegion, isLoading 
           });
         }
 
+        if (!map.getLayer(HOTSPOT_LAYER_ID)) {
+          map.addLayer({
+            id: HOTSPOT_LAYER_ID,
+            type: "line",
+            source: SOURCE_ID,
+            paint: {
+              "line-width": 2.4,
+              "line-color": "#22d3ee",
+              "line-opacity": 0.85,
+            },
+            filter: ["match", ["get", "id"], hotspotRegionIdsRef.current, true, false],
+          });
+        }
+
         map.on("mousemove", FILL_LAYER_ID, (event) => {
           const feature = event.features?.[0];
           const properties = feature?.properties;
@@ -345,7 +372,11 @@ export function MapPanel({ regions, selectedRegionId, onSelectRegion, isLoading 
     if (map.getLayer(HIGHLIGHT_LAYER_ID)) {
       map.setFilter(HIGHLIGHT_LAYER_ID, ["==", ["get", "id"], selectedRegionId ?? ""]);
     }
-  }, [geojson, mapReady, selectedRegionId]);
+
+    if (map.getLayer(HOTSPOT_LAYER_ID)) {
+      map.setFilter(HOTSPOT_LAYER_ID, ["match", ["get", "id"], hotspotRegionIds, true, false]);
+    }
+  }, [geojson, mapReady, selectedRegionId, hotspotRegionIds]);
 
   return (
     <section className="relative h-full min-h-0 overflow-hidden rounded-3xl border border-white/10 bg-zinc-900/70 shadow-2xl shadow-black/30">
@@ -392,6 +423,9 @@ export function MapPanel({ regions, selectedRegionId, onSelectRegion, isLoading 
           <span className="h-2.5 w-8 rounded bg-[#F97316]" />
           <span className="h-2.5 w-8 rounded bg-[#EF4444]" />
         </div>
+        {hotspotRegionIds.length > 0 ? (
+          <p className="mt-1 text-[10px] text-cyan-300">Cyan outlines = anomaly hotspots</p>
+        ) : null}
       </div>
     </section>
   );
