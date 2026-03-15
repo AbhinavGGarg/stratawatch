@@ -7,11 +7,11 @@ import { BriefingPanel } from "@/components/dashboard/BriefingPanel";
 import { MapPanel } from "@/components/dashboard/MapPanel";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { LocalImpactSimulationPanel } from "@/components/simulation/LocalImpactSimulationPanel";
-import { useOpsStream } from "@/hooks/use-ops-stream";
 import type { DataMode } from "@/hooks/use-stratawatch";
 import { DEMO_MODE_SCRIPT } from "@/mock-data/demo-mode";
 import { useStratawatch } from "@/hooks/use-stratawatch";
 import { useCommandStore } from "@/store/command-store";
+import type { BuildingSimulationResult, ScenarioType } from "@/types/command-types";
 
 interface OperationsWorkbenchProps {
   dataMode?: DataMode;
@@ -36,12 +36,17 @@ export function OperationsWorkbench({ dataMode = "live" }: OperationsWorkbenchPr
   const setRegion = useCommandStore((state) => state.setRegion);
   const setScale = useCommandStore((state) => state.setScale);
   const setSite = useCommandStore((state) => state.setSite);
+  const setBuilding = useCommandStore((state) => state.setBuilding);
+  const setSimulation = useCommandStore((state) => state.setSimulation);
+  const setScenario = useCommandStore((state) => state.setScenario);
   const selectedSite = useCommandStore((state) => state.selectedSite);
   const sites = useCommandStore((state) => state.sites);
   const opsFeed = useCommandStore((state) => state.opsFeed);
   const pushOpsFeed = useCommandStore((state) => state.pushOpsFeed);
   const setDemoMode = useCommandStore((state) => state.setDemoMode);
   const [demoRunning, setDemoRunning] = useState(false);
+  const [demoStep, setDemoStep] = useState(0);
+  const [demoLastAction, setDemoLastAction] = useState<string | null>(null);
   const demoTimersRef = useRef<number[]>([]);
 
   useEffect(() => {
@@ -64,8 +69,6 @@ export function OperationsWorkbench({ dataMode = "live" }: OperationsWorkbenchPr
     }
   }, [filteredSites, selectedRegionId, selectedSite, setScale, setSite]);
 
-  useOpsStream(dataMode === "simulated" && panel.demoModeEnabled);
-
   const clearDemoTimers = () => {
     for (const timer of demoTimersRef.current) {
       window.clearTimeout(timer);
@@ -86,13 +89,49 @@ export function OperationsWorkbench({ dataMode = "live" }: OperationsWorkbenchPr
       .slice(0, 40);
   }, [activityFeed, opsFeed]);
 
+  const inferScenarioFromEvent = (title: string, message: string): ScenarioType => {
+    const text = `${title} ${message}`.toLowerCase();
+    if (text.includes("flood")) return "flood_risk";
+    if (text.includes("smoke")) return "smoke_spread";
+    if (text.includes("earthquake") || text.includes("structural")) return "earthquake_damage";
+    if (text.includes("evacuation")) return "evacuation_stress";
+    return "fire";
+  };
+
+  const runDemoSimulation = async (buildingId: string, scenario: ScenarioType) => {
+    try {
+      const response = await fetch("/api/building/simulate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          buildingId,
+          scenario,
+        }),
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const payload = (await response.json()) as { result: BuildingSimulationResult };
+      setSimulation(payload.result);
+      setScenario(scenario);
+    } catch {
+      // Keep demo resilient if simulation call fails.
+    }
+  };
+
   const runDemoMode = () => {
     clearDemoTimers();
     setDemoRunning(true);
+    setDemoStep(0);
+    setDemoLastAction("Initializing multi-scale sequence");
     setDemoMode(true);
     setScale("global");
 
-    const firstRegion = DEMO_MODE_SCRIPT[0]?.regionId ?? "suez_corridor";
+    const firstRegion = DEMO_MODE_SCRIPT[0]?.regionId ?? "east_med";
     setSelectedRegionId(firstRegion);
 
     pushOpsFeed([
@@ -115,6 +154,9 @@ export function OperationsWorkbench({ dataMode = "live" }: OperationsWorkbenchPr
           timestamp: new Date(Date.now()).toISOString(),
         };
 
+        setDemoStep(index + 1);
+        setDemoLastAction(shiftedEvent.title);
+
         if (shiftedEvent.regionId) {
           setSelectedRegionId(shiftedEvent.regionId);
           setRegion(shiftedEvent.regionId);
@@ -127,19 +169,27 @@ export function OperationsWorkbench({ dataMode = "live" }: OperationsWorkbenchPr
         }
 
         if (shiftedEvent.buildingId) {
+          setBuilding(shiftedEvent.buildingId);
           setScale("building");
         }
 
-        if (index === 2) {
+        if (shiftedEvent.source === "cascade") {
           triggerDisruption();
+        }
+
+        if (shiftedEvent.source === "simulation" && shiftedEvent.buildingId) {
+          const scenario = inferScenarioFromEvent(shiftedEvent.title, shiftedEvent.message);
+          void runDemoSimulation(shiftedEvent.buildingId, scenario);
         }
 
         pushOpsFeed([shiftedEvent]);
 
         if (index === DEMO_MODE_SCRIPT.length - 1) {
           setDemoRunning(false);
+          setDemoMode(false);
+          setDemoLastAction("Demo sequence complete");
         }
-      }, index * 2200);
+      }, index * 2600);
 
       demoTimersRef.current.push(timer);
     });
@@ -166,6 +216,11 @@ export function OperationsWorkbench({ dataMode = "live" }: OperationsWorkbenchPr
               {demoRunning ? "Demo Running..." : "Run Demo Mode"}
             </button>
           )}
+          {dataMode === "simulated" && (demoRunning || demoLastAction) ? (
+            <span className="rounded-lg border border-orange-400/35 bg-orange-500/15 px-2 py-1 text-[11px] text-orange-100">
+              Demo {demoRunning ? `${demoStep}/${DEMO_MODE_SCRIPT.length}` : "Complete"}{demoLastAction ? ` · ${demoLastAction}` : ""}
+            </span>
+          ) : null}
           <span
             className={`rounded-lg border px-2 py-1 text-[11px] ${
               dataMode === "live"

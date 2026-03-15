@@ -3,7 +3,7 @@
 import { Suspense, useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment, Grid, OrbitControls } from "@react-three/drei";
-import type { Group, Mesh } from "three";
+import type { Group, Mesh, MeshStandardMaterial } from "three";
 import type { Building, HazardZone, ScenarioType } from "@/types/command-types";
 
 interface BuildingSceneProps {
@@ -33,6 +33,7 @@ const scenarioLabel: Record<ScenarioType, string> = {
 
 function BuildingMesh({ building, scenarioType }: { building: Building; scenarioType: ScenarioType }) {
   const groupRef = useRef<Group | null>(null);
+  const meshRef = useRef<Mesh | null>(null);
 
   useFrame(({ clock }) => {
     const group = groupRef.current;
@@ -52,11 +53,30 @@ function BuildingMesh({ building, scenarioType }: { building: Building; scenario
       group.position.z = 0;
       group.rotation.z = 0;
     }
+
+    const material = meshRef.current?.material as MeshStandardMaterial | undefined;
+    if (!material) {
+      return;
+    }
+
+    if (scenarioType === "fire" || scenarioType === "smoke_spread") {
+      material.color.set("#7f1d1d");
+      material.emissive.set("#f97316");
+      material.emissiveIntensity = 0.26 + Math.max(0, Math.sin(t * 7.2)) * 0.48;
+      material.roughness = 0.6;
+      material.metalness = 0.2;
+    } else {
+      material.color.set("#9ca3af");
+      material.emissive.set("#111111");
+      material.emissiveIntensity = 0.02;
+      material.roughness = 0.5;
+      material.metalness = 0.22;
+    }
   });
 
   return (
     <group ref={groupRef}>
-      <mesh castShadow receiveShadow>
+      <mesh ref={meshRef} castShadow receiveShadow>
         <boxGeometry args={[10, Math.max(2.6, building.estimatedHeightMeters / 6), 8]} />
         <meshStandardMaterial color="#9ca3af" metalness={0.22} roughness={0.5} />
       </mesh>
@@ -109,6 +129,7 @@ function FloodEffect({ intensity }: { intensity: number }) {
 
 function FireSmokeEffect({ intensity, smoke, embers }: { intensity: number; smoke?: boolean; embers?: boolean }) {
   const fireRef = useRef<Mesh | null>(null);
+  const flameRefs = useRef<Array<Mesh | null>>([]);
   const smokeRefs = useRef<Array<Mesh | null>>([]);
   const emberRefs = useRef<Array<Mesh | null>>([]);
 
@@ -119,6 +140,18 @@ function FireSmokeEffect({ intensity, smoke, embers }: { intensity: number; smok
       fireRef.current.scale.setScalar(1 + Math.sin(t * 5.4) * 0.14 + intensity * 0.2);
       fireRef.current.position.y = 1.7 + Math.sin(t * 4.2) * 0.15;
     }
+
+    flameRefs.current.forEach((mesh, index) => {
+      if (!mesh) return;
+      const phase = t * (5 + index * 0.32);
+      mesh.position.y = 1.4 + Math.abs(Math.sin(phase)) * (1.8 + intensity * 2.2);
+      mesh.scale.set(
+        0.8 + Math.max(0.2, Math.sin(phase + 0.8)) * 0.65,
+        1.2 + Math.max(0.2, Math.cos(phase + 0.2)) * 1.7,
+        0.8 + Math.max(0.2, Math.sin(phase + 0.5)) * 0.65,
+      );
+      mesh.rotation.y = phase * 0.28;
+    });
 
     smokeRefs.current.forEach((mesh, index) => {
       if (!mesh) return;
@@ -141,12 +174,29 @@ function FireSmokeEffect({ intensity, smoke, embers }: { intensity: number; smok
 
   return (
     <group>
-      <pointLight position={[0, 4.2, 0]} color="#f97316" intensity={2.2 + intensity * 1.5} distance={26} />
-      <pointLight position={[1.2, 2.8, -0.6]} color="#ef4444" intensity={1.2 + intensity * 1.1} distance={18} />
+      <pointLight position={[0, 4.2, 0]} color="#f97316" intensity={2.6 + intensity * 1.7} distance={28} />
+      <pointLight position={[1.2, 2.8, -0.6]} color="#ef4444" intensity={1.6 + intensity * 1.2} distance={20} />
       <mesh ref={fireRef} position={[0, 1.8, 0]}>
         <sphereGeometry args={[1.1 + intensity * 0.8, 20, 20]} />
         <meshStandardMaterial color="#ef4444" emissive="#f97316" emissiveIntensity={1.4} transparent opacity={0.72} />
       </mesh>
+
+      {Array.from({ length: 6 }).map((_, index) => {
+        const angle = (index / 6) * Math.PI * 2;
+        const radius = 1.5 + (index % 2) * 0.5;
+        return (
+          <mesh
+            key={`flame-${index}`}
+            ref={(node) => {
+              flameRefs.current[index] = node;
+            }}
+            position={[Math.cos(angle) * radius, 1.6, Math.sin(angle) * radius]}
+          >
+            <coneGeometry args={[0.38, 1.2, 14]} />
+            <meshStandardMaterial color="#fb923c" emissive="#f97316" emissiveIntensity={1.5} transparent opacity={0.85} />
+          </mesh>
+        );
+      })}
 
       {smoke
         ? Array.from({ length: 5 }).map((_, index) => (
